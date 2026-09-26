@@ -1,0 +1,534 @@
+{
+  "note": "以下尺寸、位姿、相机外参和随机范围均为仿真假设，非 RoboChallenge 官方参数",
+  "timestep": 0.002,
+  "ssgi": {
+    "enabled": false,
+    "resolutionscale": 1,
+    "raycount": 2,
+    "stepcount": 8,
+    "thickness": 0.25,
+    "intensity": 0.8,
+    "gidenoiseoffset": 3,
+    "rraycount": 256,
+    "rdenoiseoffset": 3
+  },
+  "pbr": {
+    "table": {"reflectance": 0.5, "roughness": 0.8, "metallic": 0},
+    "blocks": {"reflectance": 0.5, "roughness": 0.48, "metallic": 0},
+    "ur5e": {
+      "black": {"reflectance": 0.5, "roughness": 0.58, "metallic": 0},
+      "jointgray": {"reflectance": 0.5, "roughness": 0.48, "metallic": 0},
+      "linkgray": {"reflectance": 0.5, "roughness": 0.52, "metallic": 0},
+      "urblue": {"reflectance": 0.5, "roughness": 0.5, "metallic": 0}
+    },
+    "gripper": {
+      "metal": {"reflectance": 0.5, "roughness": 0.35, "metallic": 1},
+      "gray": {"reflectance": 0.5, "roughness": 0.5, "metallic": 0},
+      "black": {"reflectance": 0.5, "roughness": 0.62, "metallic": 0},
+      "silicone": {"reflectance": 0.5, "roughness": 0.9, "metallic": 0}
+    }
+  },
+  "table": {
+    "center": [
+      0.45,
+      0.0,
+      0.5
+    ],
+    "half_size": [
+      0.45,
+      0.55,
+      0.04
+    ],
+    "friction": 0.8,
+    "rgba": [
+      0.82,
+      0.82,
+      0.8,
+      1.0
+    ]
+  },
+  "block": {
+    "half_size": 0.025,
+    "mass": 0.12,
+    "friction": 0.8,
+    "x_range": [
+      -0.15,
+      0.15
+    ],
+    "y_range": [
+      -0.15,
+      0.15
+    ],
+    "min_spacing": 0.1,
+    "yaw_range_deg": [
+      -30.0,
+      30.0
+    ],
+    "fixed_xy": {
+      "yellow": [
+        -0.1,
+        -0.12
+      ],
+      "orange": [
+        0.05,
+        -0.02
+      ],
+      "sky_blue": [
+        -0.03,
+        0.13
+      ]
+    },
+    "note": "x_range、y_range 和 fixed_xy 均相对桌面中心的 XY 坐标，单位米；yaw_range_deg 是方块绕世界 Z 轴的角度范围，单位度；重置时 Z 从桌面顶面计算。x_range [-0.15, 0.15] 对应世界坐标 X [0.3, 0.6]",
+    "clearance_above_table": 0.001
+  },
+  "global_camera": {
+    "fovy_deg": 60.0,
+    "resolution": [
+      224,
+      224
+    ],
+    "xyaxes": [
+      0.0,
+      1.0,
+      0,
+      -0.643,
+      0.0,
+      0.766
+    ],
+    "pos_from_table_top": [
+      0.4,
+      0.0,
+      0.5
+    ]
+  },
+  "wrist_camera": {
+    "fovy_deg": 60.0,
+    "parent": "grip_base_mount",
+    "resolution": [
+      224,
+      224
+    ],
+    "pos": [
+      0.0,
+      -0.1,
+      0.02
+    ],
+    "note": "pos 和 quat 相对于 grip_base_mount; quat 使用 MuJoCo 的 wxyz 顺序",
+    "quat": [
+      0.259,
+      0.966,
+      0.0,
+      0.0
+    ]
+  },
+  "stickers": {
+    "note": "仿真假设；机器人在 x=0, 近边是 -X; 从近边逆时针为绿、黄、蓝、红; 色带顶面高出桌面 0.1 mm",
+    "half_thickness": 0.0005,
+    "items": [
+      {
+        "name": "green",
+        "center": [
+          0.175,
+          0.0
+        ],
+        "half_size": [
+          0.1,
+          0.14
+        ],
+        "rgba": [
+          0.08,
+          0.7,
+          0.17,
+          1
+        ]
+      },
+      {
+        "name": "yellow",
+        "center": [
+          0.45,
+          0.275
+        ],
+        "half_size": [
+          0.17,
+          0.1
+        ],
+        "rgba": [
+          0.8,
+          0.8,
+          0.05,
+          1
+        ]
+      },
+      {
+        "name": "blue",
+        "center": [
+          0.725,
+          0.0
+        ],
+        "half_size": [
+          0.1,
+          0.145
+        ],
+        "rgba": [
+          0.02,
+          0.08,
+          0.42,
+          1
+        ]
+      },
+      {
+        "name": "red",
+        "center": [
+          0.45,
+          -0.275
+        ],
+        "half_size": [
+          0.175,
+          0.1
+        ],
+        "rgba": [
+          0.95,
+          0.06,
+          0.05,
+          1
+        ]
+      }
+    ],
+    "surface_offset": 0.0001
+  },
+  "background": {
+    "note": "仿真假设；base_pos 为世界坐标米，yaw_deg 为世界Z轴角度；启用 reset(randomize_background=True) 后在基础位姿上叠加配置的抖动",
+    "chair": {
+      "mesh": "vendor/office/chair_desk.glb",
+      "base_pos": [
+        -0.6,
+        0.42,
+        -0.08
+      ],
+      "yaw_deg": 0.0,
+      "position_jitter": [
+        0.08,
+        0.08,
+        0.0
+      ],
+      "yaw_jitter_deg": 12,
+      "parts": [
+        {
+          "name": "frame",
+          "mesh": "vendor/office/chair_frame.obj",
+          "rgba": [
+            0.03,
+            0.03,
+            0.03,
+            1.0
+          ]
+        },
+        {
+          "name": "cushion",
+          "mesh": "vendor/office/chair_cushion.obj",
+          "rgba": [
+            0.03,
+            0.03,
+            0.03,
+            1.0
+          ]
+        }
+      ]
+    },
+    "desk": {
+      "mesh": "vendor/office/desk/metal_office_desk_1k.gltf",
+      "base_pos": [
+        -1.5,
+        1.5,
+        -0.08
+      ],
+      "yaw_deg": 0.0,
+      "position_jitter": [
+        0.05,
+        0.06,
+        0.0
+      ],
+      "yaw_jitter_deg": 4,
+      "parts": [
+        {
+          "name": "visual",
+          "mesh": "vendor/office/desk/metal_office_desk_1k.gltf",
+          "rgba": [
+            1.0,
+            1.0,
+            1.0,
+            1
+          ]
+        }
+      ]
+    },
+    "plant": {
+      "mesh": "vendor/office/plant/potted_plant_02_1k.gltf",
+      "base_pos": [
+        0.3,
+        0.75,
+        -0.08
+      ],
+      "position_jitter": [
+        0.06,
+        0.05,
+        0.0
+      ],
+      "yaw_jitter_deg": 15,
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ],
+      "parts": [
+        {
+          "name": "pot",
+          "mesh": "vendor/office/plant/potted_plant_02_pot.gltf",
+          "reference_frame": true,
+          "rgba": [
+            0.62,
+            0.35,
+            0.22,
+            1
+          ]
+        },
+        {
+          "name": "leaves",
+          "mesh": "vendor/office/plant/potted_plant_02_leaves.gltf",
+          "relative_to": "pot",
+          "relative_pos": [
+            -0.0,
+            0.16,
+            0.0
+          ],
+          "rgba": [
+            0.2,
+            0.53,
+            0.22,
+            1
+          ]
+        }
+      ]
+    },
+    "chair_2": {
+      "mesh": "vendor/office/chair_desk.glb",
+      "base_pos": [
+        -1.1,
+        -1.0,
+        -0.08
+      ],
+      "yaw_deg": 0.0,
+      "position_jitter": [
+        0.08,
+        0.08,
+        0.0
+      ],
+      "yaw_jitter_deg": 12,
+      "parts": [
+        {
+          "name": "frame",
+          "mesh": "vendor/office/chair_frame.obj",
+          "rgba": [
+            0.03,
+            0.03,
+            0.03,
+            1.0
+          ]
+        },
+        {
+          "name": "cushion",
+          "mesh": "vendor/office/chair_cushion.obj",
+          "rgba": [
+            0.03,
+            0.03,
+            0.03,
+            1.0
+          ]
+        }
+      ]
+    },
+    "desk_2": {
+      "mesh": "vendor/office/desk/metal_office_desk_1k.gltf",
+      "base_pos": [
+        -1.5,
+        -0.6,
+        -0.08
+      ],
+      "yaw_deg": 0.0,
+      "position_jitter": [
+        0.05,
+        0.06,
+        0.0
+      ],
+      "yaw_jitter_deg": 4,
+      "parts": [
+        {
+          "name": "visual",
+          "mesh": "vendor/office/desk/metal_office_desk_1k.gltf",
+          "rgba": [
+            1.0,
+            1.0,
+            1.0,
+            1
+          ]
+        }
+      ]
+    }
+  },
+  "floor": {
+    "z": -0.08,
+    "size": [
+      5.0,
+      5.0,
+      0.1
+    ],
+    "rgba": [
+      0.38,
+      0.4,
+      0.43,
+      1.0
+    ]
+  },
+  "room": {
+    "ceiling_z": 4.0,
+    "ceiling": false,
+    "wall_thickness": 0.1,
+    "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "robot": {
+    "gravity_compensation": 1.0,
+    "base_from_table_top": [
+      -0.45,
+      0.0,
+      0.0
+    ],
+    "gripper_mount_offset": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "lighting_randomization": {
+    "key_azimuth_jitter_deg": 45.0,
+    "key_elevation_jitter_deg": 12.0,
+    "key_min_elevation_deg": 35.0,
+    "key_max_elevation_deg": 65.0,
+    "brightness_scale_range": [0.92, 1.08],
+    "key_fill_transfer": 0.025,
+    "max_attempts": 8,
+    "quality": {
+      "median_range": [55.0, 220.0],
+      "max_p95": 240.0,
+      "max_bright_fraction": 0.01,
+      "max_dark_fraction": 0.2,
+      "min_std": 15.0
+    }
+  },
+  "headlight": {
+    "ambient": [0.04, 0.04, 0.04],
+    "diffuse": [0.08, 0.08, 0.08],
+    "specular": [0.0, 0.0, 0.0]
+  },
+  "lighting": [
+    {
+      "name": "window_key",
+      "directional": true,
+      "pos": [
+        0.45,
+        1.8,
+        1.8
+      ],
+      "dir": [
+        0.0,
+        -0.65,
+        -0.76
+      ],
+      "ambient": [
+        0.06,
+        0.065,
+        0.075
+      ],
+      "diffuse": [
+        0.33,
+        0.36,
+        0.4
+      ],
+      "specular": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "castshadow": true
+    },
+    {
+      "name": "ceiling_fill",
+      "pos": [
+        0.25,
+        -0.6,
+        2.1
+      ],
+      "dir": [
+        0.1,
+        0.2,
+        -1.0
+      ],
+      "cutoff": 75,
+      "attenuation": [
+        1.0,
+        0.25,
+        0.1
+      ],
+      "ambient": [
+        0.01,
+        0.01,
+        0.01
+      ],
+      "diffuse": [
+        0.12,
+        0.11,
+        0.1
+      ],
+      "specular": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "castshadow": false
+    },
+    {
+      "name": "rear_fill",
+      "directional": true,
+      "pos": [
+        0.45,
+        -1.2,
+        1.5
+      ],
+      "dir": [
+        0.0,
+        0.55,
+        -0.83
+      ],
+      "ambient": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "diffuse": [
+        0.08,
+        0.08,
+        0.08
+      ],
+      "specular": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "castshadow": false
+    }
+  ]
+}
