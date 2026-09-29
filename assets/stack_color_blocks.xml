@@ -1,0 +1,325 @@
+<mujoco model="stack_color_blocks">
+  <visual>
+    <headlight ambient="0.04 0.04 0.04" diffuse="0.08 0.08 0.08" specular="0.0 0.0 0.0" />
+    <ssgi active="true" resolutionscale="1" raycount="2" stepcount="8" thickness="0.25" intensity="0.8" gidenoiseoffset="3" rraycount="256" rdenoiseoffset="3" />
+  </visual>
+  <compiler angle="radian" autolimits="true" />
+  <option timestep="0.002" />
+  <default>
+    <default class="ur5e">
+      <material />
+      <joint axis="0 1 0" range="-6.28319 6.28319" armature="0.1" />
+      <default class="size3">
+        <default class="size3_limited">
+          <joint range="-3.1415 3.1415" />
+          <position ctrlrange="-3.1415 3.1415" />
+        </default>
+      </default>
+      <default class="size1">
+        <position forcerange="-28 28" kp="500" kv="100.0" />
+      </default>
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="collision">
+        <geom type="capsule" group="3" />
+        <default class="eef_collision">
+          <geom type="cylinder" />
+        </default>
+      </default>
+      <site size="0.001" rgba="0.5 0.5 0.5 0.3" group="4" />
+      <position ctrlrange="-6.2831 6.2831" forcerange="-150 150" kp="2000" kv="400.0" />
+    </default>
+    <default class="grip_2f85">
+      <mesh scale="0.001 0.001 0.001" />
+      <general biastype="affine" />
+      <joint axis="1 0 0" />
+      <default class="grip_driver">
+        <joint range="0 0.8" armature="0.005" damping="0.1" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1" />
+      </default>
+      <default class="grip_follower">
+        <joint range="-0.872664 0.872664" armature="0.001" pos="0 -0.018 0.0065" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1" />
+      </default>
+      <default class="grip_spring_link">
+        <joint range="-0.29670597283 0.8" armature="0.001" stiffness="0.05" springref="2.62" damping="0.00125" />
+      </default>
+      <default class="grip_coupler">
+        <joint range="-1.57 0" armature="0.001" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1" />
+      </default>
+      <default class="grip_visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="grip_collision">
+        <geom type="mesh" group="3" />
+        <default class="grip_pad_box1">
+          <geom mass="0" type="box" pos="0 -0.0026 0.028125" size="0.011 0.004 0.009375" friction="0.7" solimp="0.95 0.99 0.001" solref="0.004 1" priority="1" rgba="0.55 0.55 0.55 1" />
+        </default>
+        <default class="grip_pad_box2">
+          <geom mass="0" type="box" pos="0 -0.0026 0.009375" size="0.011 0.004 0.009375" friction="0.6" solimp="0.95 0.99 0.001" solref="0.004 1" priority="1" rgba="0.45 0.45 0.45 1" />
+        </default>
+      </default>
+    </default>
+  </default>
+  <asset>
+    <material class="ur5e" name="black" rgba="0.033 0.033 0.033 1" reflectance="0.5" roughness="0.58" metallic="0.0" />
+    <material class="ur5e" name="jointgray" rgba="0.278 0.278 0.278 1" reflectance="0.5" roughness="0.48" metallic="0.0" />
+    <material class="ur5e" name="linkgray" rgba="0.82 0.82 0.82 1" reflectance="0.5" roughness="0.52" metallic="0.0" />
+    <material class="ur5e" name="urblue" rgba="0.49 0.678 0.8 1" reflectance="0.5" roughness="0.5" metallic="0.0" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/base_0.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/base_1.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/shoulder_0.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/shoulder_1.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/shoulder_2.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/upperarm_0.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/upperarm_1.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/upperarm_2.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/upperarm_3.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/forearm_0.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/forearm_1.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/forearm_2.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/forearm_3.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/wrist1_0.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/wrist1_1.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/wrist1_2.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/wrist2_0.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/wrist2_1.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/wrist2_2.obj" />
+    <mesh file="vendor/menagerie/universal_robots_ur5e/assets/wrist3.obj" />
+    <material name="grip_metal" rgba="0.58 0.58 0.58 1" reflectance="0.5" roughness="0.35" metallic="1.0" />
+    <material name="grip_silicone" rgba="0.1882 0.1882 0.1882 1" reflectance="0.5" roughness="0.9" metallic="0.0" />
+    <material name="grip_gray" rgba="0.4627 0.4627 0.4627 1" reflectance="0.5" roughness="0.5" metallic="0.0" />
+    <material name="grip_black" rgba="0.149 0.149 0.149 1" reflectance="0.5" roughness="0.62" metallic="0.0" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/base_mount.stl" name="grip_base_mount" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/base.stl" name="grip_base" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/driver.stl" name="grip_driver" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/coupler.stl" name="grip_coupler" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/follower.stl" name="grip_follower" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/pad.stl" name="grip_pad" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/silicone_pad.stl" name="grip_silicone_pad" />
+    <mesh class="grip_2f85" file="vendor/menagerie/robotiq_2f85/assets/spring_link.stl" name="grip_spring_link" />
+    <material name="table_material" rgba="0.82 0.82 0.8 1.0" reflectance="0.5" roughness="0.8" metallic="0.0" />
+    <material name="sticker_green_material" rgba="0.08 0.7 0.17 1" depthbias="1" castshadow="false" />
+    <material name="sticker_yellow_material" rgba="0.8 0.8 0.05 1" depthbias="1" castshadow="false" />
+    <material name="sticker_blue_material" rgba="0.02 0.08 0.42 1" depthbias="1" castshadow="false" />
+    <material name="sticker_red_material" rgba="0.95 0.06 0.05 1" depthbias="1" castshadow="false" />
+    <mesh name="background_chair_frame" file="vendor/office/chair_frame.obj" />
+    <mesh name="background_chair_cushion" file="vendor/office/chair_cushion.obj" />
+    <mesh name="background_desk_visual" file="vendor/office/desk/metal_office_desk_1k.gltf" />
+    <mesh name="background_plant_pot" file="vendor/office/plant/potted_plant_02_pot.gltf" scale="0.55 0.55 0.55" />
+    <mesh name="background_plant_leaves" file="vendor/office/plant/potted_plant_02_leaves.gltf" scale="0.55 0.55 0.55" />
+    <mesh name="background_chair_2_frame" file="vendor/office/chair_frame.obj" />
+    <mesh name="background_chair_2_cushion" file="vendor/office/chair_cushion.obj" />
+    <mesh name="background_desk_2_visual" file="vendor/office/desk/metal_office_desk_1k.gltf" />
+    <material name="yellow_block_material" rgba="0.95 0.78 0.04 1" reflectance="0.5" roughness="0.48" metallic="0.0" />
+    <material name="orange_block_material" rgba="0.98 0.31 0.03 1" reflectance="0.5" roughness="0.48" metallic="0.0" />
+    <material name="sky_blue_block_material" rgba="0.32 0.72 0.95 1" reflectance="0.5" roughness="0.48" metallic="0.0" />
+  </asset>
+  <worldbody>
+    <body name="base" quat="0 0 0 -1" childclass="ur5e" gravcomp="1.0" pos="0.0 0.0 0.54">
+      <inertial mass="4.0" pos="0 0 0" diaginertia="0.00443333156 0.00443333156 0.0072" />
+      <geom mesh="base_0" material="black" class="visual" />
+      <geom mesh="base_1" material="jointgray" class="visual" />
+      <body name="shoulder_link" pos="0 0 0.163" gravcomp="1.0">
+        <inertial mass="3.7" pos="0 0 0" diaginertia="0.0102675 0.0102675 0.00666" />
+        <joint name="shoulder_pan_joint" class="size3" axis="0 0 1" />
+        <geom mesh="shoulder_0" material="urblue" class="visual" />
+        <geom mesh="shoulder_1" material="black" class="visual" />
+        <geom mesh="shoulder_2" material="jointgray" class="visual" />
+        <geom class="collision" size="0.06 0.06" pos="0 0 -0.04" />
+        <body name="upper_arm_link" pos="0 0.138 0" quat="1 0 1 0" gravcomp="1.0">
+          <inertial mass="8.393" pos="0 0 0.2125" diaginertia="0.133886 0.133886 0.0151074" />
+          <joint name="shoulder_lift_joint" class="size3" />
+          <geom mesh="upperarm_0" material="linkgray" class="visual" />
+          <geom mesh="upperarm_1" material="black" class="visual" />
+          <geom mesh="upperarm_2" material="jointgray" class="visual" />
+          <geom mesh="upperarm_3" material="urblue" class="visual" />
+          <geom class="collision" pos="0 -0.04 0" quat="1 1 0 0" size="0.06 0.06" />
+          <geom class="collision" size="0.05 0.2" pos="0 0 0.2" />
+          <body name="forearm_link" pos="0 -0.131 0.425" gravcomp="1.0">
+            <inertial mass="2.275" pos="0 0 0.196" diaginertia="0.0311796 0.0311796 0.004095" />
+            <joint name="elbow_joint" class="size3_limited" />
+            <geom mesh="forearm_0" material="urblue" class="visual" />
+            <geom mesh="forearm_1" material="linkgray" class="visual" />
+            <geom mesh="forearm_2" material="black" class="visual" />
+            <geom mesh="forearm_3" material="jointgray" class="visual" />
+            <geom class="collision" pos="0 0.08 0" quat="1 1 0 0" size="0.055 0.06" />
+            <geom class="collision" size="0.038 0.19" pos="0 0 0.2" />
+            <body name="wrist_1_link" pos="0 0 0.392" quat="1 0 1 0" gravcomp="1.0">
+              <inertial mass="1.219" pos="0 0.127 0" diaginertia="0.0025599 0.0025599 0.0021942" />
+              <joint name="wrist_1_joint" class="size1" />
+              <geom mesh="wrist1_0" material="black" class="visual" />
+              <geom mesh="wrist1_1" material="urblue" class="visual" />
+              <geom mesh="wrist1_2" material="jointgray" class="visual" />
+              <geom class="collision" pos="0 0.05 0" quat="1 1 0 0" size="0.04 0.07" />
+              <body name="wrist_2_link" pos="0 0.127 0" gravcomp="1.0">
+                <inertial mass="1.219" pos="0 0 0.1" diaginertia="0.0025599 0.0025599 0.0021942" />
+                <joint name="wrist_2_joint" axis="0 0 1" class="size1" />
+                <geom mesh="wrist2_0" material="black" class="visual" />
+                <geom mesh="wrist2_1" material="urblue" class="visual" />
+                <geom mesh="wrist2_2" material="jointgray" class="visual" />
+                <geom class="collision" size="0.04 0.06" pos="0 0 0.04" />
+                <geom class="collision" pos="0 0.02 0.1" quat="1 1 0 0" size="0.04 0.04" />
+                <body name="wrist_3_link" pos="0 0 0.1" gravcomp="1.0">
+                  <inertial mass="0.1889" pos="0 0.0771683 0" quat="1 0 0 1" diaginertia="0.000132134 9.90863e-05 9.90863e-05" />
+                  <joint name="wrist_3_joint" class="size1" />
+                  <geom material="linkgray" mesh="wrist3" class="visual" />
+                  <geom class="eef_collision" pos="0 0.08 0" quat="1 1 0 0" size="0.04 0.02" />
+                  <site name="attachment_site" pos="0 0.1 0" quat="-1 1 0 0" />
+                  <body name="grip_base_mount" pos="0.0 0.1 0.0" childclass="grip_2f85" quat="-1 1 0 0" gravcomp="1.0">
+                    <geom class="grip_visual" mesh="grip_base_mount" material="grip_black" />
+                    <geom class="grip_collision" mesh="grip_base_mount" />
+                    <body name="grip_base" pos="0 0 0.0038" quat="1 0 0 -1" gravcomp="1.0">
+                      <inertial mass="0.777441" pos="0 -2.70394e-05 0.0354675" quat="1 -0.00152849 0 0" diaginertia="0.000260285 0.000225381 0.000152708" />
+                      <geom class="grip_visual" mesh="grip_base" material="grip_black" />
+                      <geom class="grip_collision" mesh="grip_base" />
+                      <site name="grip_pinch" pos="0 0 0.145" type="sphere" group="5" rgba="0.9 0.9 0.9 1" size="0.005" />
+                      <body name="grip_right_driver" pos="0 0.0306011 0.054904" gravcomp="1.0">
+                        <inertial mass="0.00899563" pos="2.96931e-12 0.0177547 0.00107314" quat="0.681301 0.732003 0 0" diaginertia="1.72352e-06 1.60906e-06 3.22006e-07" />
+                        <joint name="grip_right_driver_joint" class="grip_driver" />
+                        <geom class="grip_visual" mesh="grip_driver" material="grip_gray" />
+                        <geom class="grip_collision" mesh="grip_driver" />
+                        <body name="grip_right_coupler" pos="0 0.0315 -0.0041" gravcomp="1.0">
+                          <inertial mass="0.0140974" pos="0 0.00301209 0.0232175" quat="0.705636 -0.0455904 0.0455904 0.705636" diaginertia="4.16206e-06 3.52216e-06 8.88131e-07" />
+                          <joint name="grip_right_coupler_joint" class="grip_coupler" />
+                          <geom class="grip_visual" mesh="grip_coupler" material="grip_black" />
+                          <geom class="grip_collision" mesh="grip_coupler" />
+                        </body>
+                      </body>
+                      <body name="grip_right_spring_link" pos="0 0.0132 0.0609" gravcomp="1.0">
+                        <inertial mass="0.0221642" pos="-8.65005e-09 0.0181624 0.0212658" quat="0.663403 -0.244737 0.244737 0.663403" diaginertia="8.96853e-06 6.71733e-06 2.63931e-06" />
+                        <joint name="grip_right_spring_link_joint" class="grip_spring_link" />
+                        <geom class="grip_visual" mesh="grip_spring_link" material="grip_black" />
+                        <geom class="grip_collision" mesh="grip_spring_link" />
+                        <body name="grip_right_follower" pos="0 0.055 0.0375" gravcomp="1.0">
+                          <inertial mass="0.0125222" pos="0 -0.011046 0.0124786" quat="1 0.1664 0 0" diaginertia="2.67415e-06 2.4559e-06 6.02031e-07" />
+                          <joint name="grip_right_follower_joint" class="grip_follower" />
+                          <geom class="grip_visual" mesh="grip_follower" material="grip_black" />
+                          <geom class="grip_collision" mesh="grip_follower" />
+                          <body name="grip_right_pad" pos="0 -0.0189 0.01352" gravcomp="1.0">
+                            <geom class="grip_pad_box1" name="grip_right_pad1" />
+                            <geom class="grip_pad_box2" name="grip_right_pad2" />
+                            <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="0.707107 0 0 0.707107" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07" />
+                            <geom class="grip_visual" mesh="grip_pad" />
+                            <body name="grip_right_silicone_pad" gravcomp="1.0">
+                              <geom class="grip_visual" mesh="grip_silicone_pad" material="grip_silicone" />
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                      <body name="grip_left_driver" pos="0 -0.0306011 0.054904" quat="0 0 0 1" gravcomp="1.0">
+                        <inertial mass="0.00899563" pos="0 0.0177547 0.00107314" quat="0.681301 0.732003 0 0" diaginertia="1.72352e-06 1.60906e-06 3.22006e-07" />
+                        <joint name="grip_left_driver_joint" class="grip_driver" />
+                        <geom class="grip_visual" mesh="grip_driver" material="grip_gray" />
+                        <geom class="grip_collision" mesh="grip_driver" />
+                        <body name="grip_left_coupler" pos="0 0.0315 -0.0041" gravcomp="1.0">
+                          <inertial mass="0.0140974" pos="0 0.00301209 0.0232175" quat="0.705636 -0.0455904 0.0455904 0.705636" diaginertia="4.16206e-06 3.52216e-06 8.88131e-07" />
+                          <joint name="grip_left_coupler_joint" class="grip_coupler" />
+                          <geom class="grip_visual" mesh="grip_coupler" material="grip_black" />
+                          <geom class="grip_collision" mesh="grip_coupler" />
+                        </body>
+                      </body>
+                      <body name="grip_left_spring_link" pos="0 -0.0132 0.0609" quat="0 0 0 1" gravcomp="1.0">
+                        <inertial mass="0.0221642" pos="-8.65005e-09 0.0181624 0.0212658" quat="0.663403 -0.244737 0.244737 0.663403" diaginertia="8.96853e-06 6.71733e-06 2.63931e-06" />
+                        <joint name="grip_left_spring_link_joint" class="grip_spring_link" />
+                        <geom class="grip_visual" mesh="grip_spring_link" material="grip_black" />
+                        <geom class="grip_collision" mesh="grip_spring_link" />
+                        <body name="grip_left_follower" pos="0 0.055 0.0375" gravcomp="1.0">
+                          <inertial mass="0.0125222" pos="0 -0.011046 0.0124786" quat="1 0.1664 0 0" diaginertia="2.67415e-06 2.4559e-06 6.02031e-07" />
+                          <joint name="grip_left_follower_joint" class="grip_follower" />
+                          <geom class="grip_visual" mesh="grip_follower" material="grip_black" />
+                          <geom class="grip_collision" mesh="grip_follower" />
+                          <body name="grip_left_pad" pos="0 -0.0189 0.01352" gravcomp="1.0">
+                            <geom class="grip_pad_box1" name="grip_left_pad1" />
+                            <geom class="grip_pad_box2" name="grip_left_pad2" />
+                            <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1" diaginertia="4.73958e-07 3.64583e-07 1.23958e-07" />
+                            <geom class="grip_visual" mesh="grip_pad" />
+                            <body name="grip_left_silicone_pad" gravcomp="1.0">
+                              <geom class="grip_visual" mesh="grip_silicone_pad" material="grip_silicone" />
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                    <camera name="wrist_rgb" pos="0.0 -0.1 0.02" quat="0.259 0.966 0.0 0.0" fovy="60.0" />
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <light name="window_key" pos="0.45 1.8 1.8" dir="-0.2240807384852671 -0.6365802977562851 -0.7379385795229957" mode="fixed" directional="true" castshadow="true" ambient="0.06 0.065 0.075" diffuse="0.3368829659049603 0.36824529391617494 0.41006173126446116" specular="0.02 0.02 0.02" />
+    <light name="ceiling_fill" pos="0.25 -0.6 2.1" dir="0.1 0.2 -1.0" mode="fixed" directional="false" castshadow="false" ambient="0.01 0.01 0.01" diffuse="0.1335519542632592 0.12309784492618764 0.1126437355891161" specular="0.0 0.0 0.0" cutoff="75" attenuation="1.0 0.25 0.1" />
+    <light name="rear_fill" pos="0.45 -1.2 1.5" dir="0.0 0.55 -0.83" mode="fixed" directional="true" castshadow="false" ambient="0.0 0.0 0.0" diffuse="0.08363287469657235 0.08363287469657235 0.08363287469657235" specular="0.0 0.0 0.0" />
+    <camera name="global_rgb" pos="0.8500000000000001 0.0 1.04" xyaxes="0.0 1.0 0 -0.643 0.0 0.766" fovy="60.0" />
+    <geom name="floor" type="plane" pos="0 0 -0.08" size="5.0 5.0 0.1" rgba="0.38 0.4 0.43 1.0" />
+    <geom name="wall_x_pos" type="box" pos="5.05 0 1.96" size="0.05 5.1 2.04" rgba="1.0 1.0 1.0 1.0" contype="0" conaffinity="0" />
+    <geom name="wall_x_neg" type="box" pos="-5.05 0 1.96" size="0.05 5.1 2.04" rgba="1.0 1.0 1.0 1.0" contype="0" conaffinity="0" />
+    <geom name="wall_y_pos" type="box" pos="0 5.05 1.96" size="5.0 0.05 2.04" rgba="1.0 1.0 1.0 1.0" contype="0" conaffinity="0" />
+    <geom name="wall_y_neg" type="box" pos="0 -5.05 1.96" size="5.0 0.05 2.04" rgba="1.0 1.0 1.0 1.0" contype="0" conaffinity="0" />
+    <geom name="table" type="box" pos="0.45 0.0 0.5" size="0.45 0.55 0.04" friction="0.8" material="table_material" />
+    <geom name="sticker_green" type="box" pos="0.175 0.0 0.5396000000000001" size="0.1 0.14 0.0005" material="sticker_green_material" contype="0" conaffinity="0" />
+    <geom name="sticker_yellow" type="box" pos="0.45 0.275 0.5396000000000001" size="0.17 0.1 0.0005" material="sticker_yellow_material" contype="0" conaffinity="0" />
+    <geom name="sticker_blue" type="box" pos="0.725 0.0 0.5396000000000001" size="0.1 0.145 0.0005" material="sticker_blue_material" contype="0" conaffinity="0" />
+    <geom name="sticker_red" type="box" pos="0.45 -0.275 0.5396000000000001" size="0.175 0.1 0.0005" material="sticker_red_material" contype="0" conaffinity="0" />
+    <body name="background_chair" mocap="true" pos="-0.8 -1.2 -0.08" quat="0.70710678 0.70710678 0 0">
+      <geom name="background_chair_frame" type="mesh" mesh="background_chair_frame" contype="0" conaffinity="0" rgba="0.03 0.03 0.03 1.0" />
+      <geom name="background_chair_cushion" type="mesh" mesh="background_chair_cushion" contype="0" conaffinity="0" rgba="0.03 0.03 0.03 1.0" />
+    </body>
+    <body name="background_desk" mocap="true" pos="-1.5 1.5 -0.08" quat="0.70710678 0.70710678 0 0">
+      <geom name="background_desk_visual" type="mesh" mesh="background_desk_visual" contype="0" conaffinity="0" rgba="1.0 1.0 1.0 1" />
+    </body>
+    <body name="background_plant" mocap="true" pos="0.3 0.75 -0.08" quat="0.70710678 0.70710678 0 0">
+      <geom name="background_plant_pot" type="mesh" mesh="background_plant_pot" contype="0" conaffinity="0" rgba="0.62 0.35 0.22 1" />
+      <geom name="background_plant_leaves" type="mesh" mesh="background_plant_leaves" contype="0" conaffinity="0" pos="0.0 0.16 0.0" rgba="0.2 0.53 0.22 1" />
+    </body>
+    <body name="background_chair_2" mocap="true" pos="-1.1 -1.0 -0.08" quat="0.70710678 0.70710678 0 0">
+      <geom name="background_chair_2_frame" type="mesh" mesh="background_chair_2_frame" contype="0" conaffinity="0" rgba="0.03 0.03 0.03 1.0" />
+      <geom name="background_chair_2_cushion" type="mesh" mesh="background_chair_2_cushion" contype="0" conaffinity="0" rgba="0.03 0.03 0.03 1.0" />
+    </body>
+    <body name="background_desk_2" mocap="true" pos="-1.5 -0.6 -0.08" quat="0.70710678 0.70710678 0 0">
+      <geom name="background_desk_2_visual" type="mesh" mesh="background_desk_2_visual" contype="0" conaffinity="0" rgba="1.0 1.0 1.0 1" />
+    </body>
+    <body name="yellow_block" pos="0.35 -0.12 0.5660000000000001">
+      <freejoint name="yellow_free" />
+      <geom name="yellow_geom" type="box" size="0.025 0.025 0.025" mass="0.12" friction="0.8" material="yellow_block_material" />
+    </body>
+    <body name="orange_block" pos="0.5 -0.02 0.5660000000000001">
+      <freejoint name="orange_free" />
+      <geom name="orange_geom" type="box" size="0.025 0.025 0.025" mass="0.12" friction="0.8" material="orange_block_material" />
+    </body>
+    <body name="sky_blue_block" pos="0.42000000000000004 0.13 0.5660000000000001">
+      <freejoint name="sky_blue_free" />
+      <geom name="sky_blue_geom" type="box" size="0.025 0.025 0.025" mass="0.12" friction="0.8" material="sky_blue_block_material" />
+    </body>
+  </worldbody>
+  <actuator>
+    <position class="size3" name="shoulder_pan" joint="shoulder_pan_joint" />
+    <position class="size3" name="shoulder_lift" joint="shoulder_lift_joint" />
+    <position class="size3_limited" name="elbow" joint="elbow_joint" />
+    <position class="size1" name="wrist_1" joint="wrist_1_joint" />
+    <position class="size1" name="wrist_2" joint="wrist_2_joint" />
+    <position class="size1" name="wrist_3" joint="wrist_3_joint" />
+    <general class="grip_2f85" name="grip_fingers_actuator" tendon="grip_split" forcerange="-5 5" ctrlrange="0 255" gainprm="0.3137255 0 0" biasprm="0 -100 -10" />
+  </actuator>
+  <contact>
+    <exclude body1="grip_base" body2="grip_left_driver" />
+    <exclude body1="grip_base" body2="grip_right_driver" />
+    <exclude body1="grip_base" body2="grip_left_spring_link" />
+    <exclude body1="grip_base" body2="grip_right_spring_link" />
+    <exclude body1="grip_right_coupler" body2="grip_right_follower" />
+    <exclude body1="grip_left_coupler" body2="grip_left_follower" />
+  </contact>
+  <tendon>
+    <fixed name="grip_split">
+      <joint joint="grip_right_driver_joint" coef="0.5" />
+      <joint joint="grip_left_driver_joint" coef="0.5" />
+    </fixed>
+  </tendon>
+  <equality>
+    <connect anchor="0 0 0" body1="grip_right_follower" body2="grip_right_coupler" solimp="0.95 0.99 0.001" solref="0.005 1" />
+    <connect anchor="0 0 0" body1="grip_left_follower" body2="grip_left_coupler" solimp="0.95 0.99 0.001" solref="0.005 1" />
+    <joint joint1="grip_right_driver_joint" joint2="grip_left_driver_joint" polycoef="0 1 0 0 0" solimp="0.95 0.99 0.001" solref="0.005 1" />
+  </equality>
+</mujoco>
