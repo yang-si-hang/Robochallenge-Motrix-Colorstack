@@ -1,8 +1,8 @@
 """Collect successful randomized color stacking episodes into one LeRobot dataset.
 
 .venv/bin/python scripts/collect_color_stack.py \
-  --seed 20260926 --episodes-per-combination 30 \
-  --max-attempts 1000 --output data/color_stack_v1 --save-video
+  --seed 20260926 --pick-color yellow --place-color orange --episodes 70 \
+  --max-attempts 1000 --output data/color_stack_v2
 """
 from __future__ import annotations
 
@@ -25,11 +25,12 @@ from stack_color_blocks import StackColorBlocksEnv
 from stack_color_blocks.control import ARM_JOINTS
 
 COLORS = ('yellow', 'orange', 'sky_blue')
-TASKS = tuple((pick, place) for pick in COLORS for place in COLORS if pick != place)
 STATE_SIZE = len(run_scene.POSE_FEATURE_NAMES) + 1
 ACTION_SIZE = len(run_scene.POSE_FEATURE_NAMES) + 1
 CAMERA_FEATURE_NAMES = {'global_rgb': 'base_0_rgb', 'wrist_rgb': 'left_wrist_0_rgb'}
 EE_FEATURE_NAMES = [f'ee.{name}' for name in run_scene.POSE_FEATURE_NAMES] + ['ee.gripper_pos']
+IMAGE_WRITER_THREADS = 8
+VIDEO_ENCODER_THREADS = 8
 
 
 class RetryEpisode(Exception):
@@ -43,10 +44,13 @@ class RecordingError(RuntimeError):
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seed', type=int, default=1, help='master seed for unique per-attempt seeds')
-    parser.add_argument('--episodes-per-combination', type=int, default=30)
+    parser.add_argument('--pick-color', choices=COLORS, default='yellow')
+    parser.add_argument('--place-color', choices=COLORS, default='orange')
+    parser.add_argument('--episodes', type=int, default=100,
+                        help='number of successful episodes for the selected task')
     parser.add_argument('--max-attempts', type=int, default=1000,
-                        help='maximum attempts across all six combinations')
-    parser.add_argument('--output', type=Path, default=Path('data/color_stack_v1'))
+                        help='maximum attempts for the selected task')
+    parser.add_argument('--output', type=Path, default=Path('data/color_stack_v2'))
     parser.add_argument('--max-steps', type=int, default=90000)
     parser.add_argument('--warmup-frames', type=int, default=10,
                         help='hold each episode at its initial pose for this many dataset frames before recording')
@@ -64,7 +68,9 @@ def parse_args():
     parser.add_argument('--lighting-attempts', type=int, default=None,
                         help='override the configured number of lighting samples per seed')
     args = parser.parse_args()
-    if (args.episodes_per_combination < 1 or args.max_attempts < 1 or args.max_steps < 1
+    if args.pick_color == args.place_color:
+        parser.error('--pick-color and --place-color must differ')
+    if (args.episodes < 1 or args.max_attempts < 1 or args.max_steps < 1
             or args.warmup_frames < 0):
         parser.error('episode, attempt, and step limits must be positive; warm-up frames must be nonnegative')
     if args.lighting_attempts is not None and args.lighting_attempts < 1:
@@ -137,9 +143,10 @@ class CollectionRecorder:
             else:
                 dataset_type = LeRobotDataset
             create_kwargs = dict(
-                repo_id='local/color_stack_v1', root=output_path, fps=run_scene.DATASET_FPS,
+                repo_id=f'local/{output_path.name}', root=output_path, fps=run_scene.DATASET_FPS,
                 robot_type='ur5e', features=features, use_videos=save_video,
-                image_writer_processes=0, image_writer_threads=0,
+                image_writer_processes=0, image_writer_threads=IMAGE_WRITER_THREADS,
+                encoder_threads=VIDEO_ENCODER_THREADS,
             )
             if save_video:
                 create_kwargs['vcodec'] = run_scene.DATASET_VIDEO_CODEC
@@ -243,6 +250,15 @@ def task_text(pick, place):
     return f"stack the {pick.replace('_', ' ')} block on top of the {place.replace('_', ' ')} block"
 
 
+def validate_trajectory_completion(metadata):
+    """Require successful collected episodes to finish with the post-place lift."""
+    stages = metadata.get('stages') or []
+    if not stages or stages[-1].get('phase') != 'lift_after_place':
+        raise RetryEpisode('trajectory did not finish with lift_after_place')
+    if not metadata.get('success_criteria', {}).get('arm_lifted', False):
+        raise RetryEpisode('final robot posture was not lifted')
+
+
 def select_lighting_env(seed, args, config, lighting_attempts):
     spec = config['lighting_randomization']
     rejected = []
@@ -287,7 +303,7 @@ def verify_dataset(path, expected_counts, expect_video=False):
     from lerobot.datasets.lerobot_dataset import LeRobotDataset
     from PIL import Image
     import io
-    dataset = LeRobotDataset(repo_id='local/color_stack_v1', root=path)
+    dataset = LeRobotDataset(repo_id=f'local/{path.name}', root=path)
     if bool(dataset.meta.video_keys) != expect_video:
         raise RuntimeError(f'expected video features={expect_video}, got {dataset.meta.video_keys}')
     for camera in run_scene.CAMERA_NAMES:
@@ -297,7 +313,8 @@ def verify_dataset(path, expected_counts, expect_video=False):
             raise RuntimeError(f'{camera} expected LeRobot {expected_dtype} feature: {feature}')
     if dataset.meta.total_episodes != sum(expected_counts.values()):
         raise RuntimeError(f'expected {sum(expected_counts.values())} episodes, got {dataset.meta.total_episodes}')
-    counts = {pair: 0 for pair in TASKS}
+    expected_pairs = tuple(expected_counts)
+    counts = {pair: 0 for pair in expected_pairs}
     tasks = set()
     frame_task_indices = dataset.hf_dataset['task_index']
     for index in range(dataset.meta.total_episodes):
@@ -309,7 +326,7 @@ def verify_dataset(path, expected_counts, expect_video=False):
         row = dataset[frame_start]
         task_text_value = row['task']
         tasks.add(task_text_value)
-        pair = next((pair for pair in TASKS if task_text(*pair) == task_text_value), None)
+        pair = next((pair for pair in expected_pairs if task_text(*pair) == task_text_value), None)
         if pair is None:
             raise RuntimeError(f'unknown task text in episode {index}: {task_text_value!r}')
         expected_task_index = int(dataset.meta.tasks.loc[task_text_value, 'task_index'])
@@ -337,7 +354,7 @@ def verify_dataset(path, expected_counts, expect_video=False):
             raise RuntimeError(f'bad state shape in episode {index}')
     if counts != expected_counts:
         raise RuntimeError(f'episode counts mismatch: {counts}')
-    expected_tasks = {task_text(*pair) for pair in TASKS}
+    expected_tasks = {task_text(*pair) for pair in expected_pairs}
     if tasks != expected_tasks:
         raise RuntimeError(f'task mapping mismatch: {tasks}')
     forbidden = list(path.rglob('*.mp4')) + list(path.rglob('*.mkv')) + list(path.rglob('*.webm'))
@@ -359,103 +376,105 @@ def main():
     base_config = json.loads((ROOT / 'configs/scene.yaml').read_text())
     base_config['ssgi']['enabled'] = True
     lighting_attempts = args.lighting_attempts or base_config['lighting_randomization']['max_attempts']
-    counts = {pair: 0 for pair in TASKS}
+    pair = (args.pick_color, args.place_color)
+    counts = {pair: 0}
     used_seeds = set()
     attempts = successes = failures = 0
     recorder = None
     try:
-        for pick, place in TASKS:
-            while counts[(pick, place)] < args.episodes_per_combination:
-                if attempts >= args.max_attempts:
-                    raise RuntimeError(f'max attempts reached: {attempts}; counts={counts}')
-                seed_rng = np.random.default_rng(np.random.SeedSequence([args.seed, attempts, 0xC010]))
-                seed = int(seed_rng.integers(0, np.iinfo(np.int32).max))
-                while seed in used_seeds:
-                    seed = (seed + 1) % np.iinfo(np.int32).max
-                used_seeds.add(seed)
-                attempts += 1
-                prompt = task_text(pick, place)
-                log = {'attempt': attempts, 'pick_color': pick, 'place_color': place,
-                       'task': prompt, 'seed': seed, 'result': 'pending'}
+        pick, place = pair
+        while counts[pair] < args.episodes:
+            if attempts >= args.max_attempts:
+                raise RuntimeError(f'max attempts reached: {attempts}; counts={counts}')
+            seed_rng = np.random.default_rng(np.random.SeedSequence([args.seed, attempts, 0xC010]))
+            seed = int(seed_rng.integers(0, np.iinfo(np.int32).max))
+            while seed in used_seeds:
+                seed = (seed + 1) % np.iinfo(np.int32).max
+            used_seeds.add(seed)
+            attempts += 1
+            prompt = task_text(pick, place)
+            log = {'attempt': attempts, 'pick_color': pick, 'place_color': place,
+                   'task': prompt, 'seed': seed, 'result': 'pending'}
+            try:
+                env, lighting_result = select_lighting_env(seed, args, base_config, lighting_attempts)
+            except Exception as exc:
+                log.update(result='error', failure=f'{type(exc).__name__}: {exc}')
+                append_jsonl(attempt_log, log)
+                raise
+            if env is None:
+                log.update(result='retry', failure='lighting camera checks failed',
+                           lighting_validation=lighting_result)
+                append_jsonl(attempt_log, log)
+                failures += 1
+                continue
+            try:
+                xml_text = (ROOT / 'assets/stack_color_blocks.xml').read_text()
+                if '<ssgi active="true"' not in xml_text or not env.ssgi_enabled:
+                    raise RecordingError('SSGI must be active in generated MJCF and runtime')
+                initial_images = env.capture()
+                if recorder is None:
+                    video_options = ((args.video_gop, args.video_bframes,
+                                      args.video_qp, args.video_preset)
+                                     if args.save_video else None)
+                    recorder = CollectionRecorder(output_path, initial_images,
+                                                  save_video=args.save_video,
+                                                  video_options=video_options)
+                recorder.begin_episode(prompt)
+                run_args = SimpleNamespace(
+                    headless=True, task='color_block_stack', pick_color=pick, place_color=place,
+                    output=output_path, seed=seed, max_steps=args.max_steps,
+                    warmup_frames=args.warmup_frames,
+                    randomize_background=args.randomize_background, randomize_lighting=True,
+                    ssgi=True, fixed_blocks=False,
+                )
+                metadata = run_scene.run_stack(env, run_args, output_path, recorder=recorder,
+                                               write_diagnostics=False, raise_on_failure=False)
                 try:
-                    env, lighting_result = select_lighting_env(seed, args, base_config, lighting_attempts)
-                except Exception as exc:
-                    log.update(result='error', failure=f'{type(exc).__name__}: {exc}')
-                    append_jsonl(attempt_log, log)
-                    raise
-                if env is None:
-                    log.update(result='retry', failure='lighting camera checks failed',
-                               lighting_validation=lighting_result)
+                    if not metadata['success']:
+                        raise RetryEpisode(metadata.get('failure') or 'trajectory failed')
+                    validate_trajectory_completion(metadata)
+                    recorder.validate(prompt, True)
+                except RetryEpisode as exc:
+                    recorder.discard()
+                    log.update(result='retry', failure=str(exc), steps=metadata.get('steps_used'),
+                               lighting=env.config.get('lighting_sample'),
+                               initial_blocks=metadata.get('initial_blocks'),
+                               initial_end_effector_pose=metadata.get('initial_end_effector_pose'))
                     append_jsonl(attempt_log, log)
                     failures += 1
                     continue
-                try:
-                    xml_text = (ROOT / 'assets/stack_color_blocks.xml').read_text()
-                    if '<ssgi active="true"' not in xml_text or not env.ssgi_enabled:
-                        raise RecordingError('SSGI must be active in generated MJCF and runtime')
-                    initial_images = env.capture()
-                    if recorder is None:
-                        video_options = ((args.video_gop, args.video_bframes,
-                                          args.video_qp, args.video_preset)
-                                         if args.save_video else None)
-                        recorder = CollectionRecorder(output_path, initial_images,
-                                                      save_video=args.save_video,
-                                                      video_options=video_options)
-                    recorder.begin_episode(prompt)
-                    run_args = SimpleNamespace(
-                        headless=True, task='color_block_stack', pick_color=pick, place_color=place,
-                        output=output_path, seed=seed, max_steps=args.max_steps,
-                        warmup_frames=args.warmup_frames,
-                        randomize_background=args.randomize_background, randomize_lighting=True,
-                        ssgi=True, fixed_blocks=False,
-                    )
-                    metadata = run_scene.run_stack(env, run_args, output_path, recorder=recorder,
-                                                   write_diagnostics=False, raise_on_failure=False)
-                    try:
-                        if not metadata['success']:
-                            raise RetryEpisode(metadata.get('failure') or 'trajectory failed')
-                        recorder.validate(prompt, True)
-                    except RetryEpisode as exc:
-                        recorder.discard()
-                        log.update(result='retry', failure=str(exc), steps=metadata.get('steps_used'),
-                                   lighting=env.config.get('lighting_sample'),
-                                   initial_blocks=metadata.get('initial_blocks'),
-                                   initial_end_effector_pose=metadata.get('initial_end_effector_pose'))
-                        append_jsonl(attempt_log, log)
-                        failures += 1
-                        continue
-                    saved_frames = recorder.commit()
-                    counts[(pick, place)] += 1
-                    successes += 1
-                    log.update(result='success', episode_index=recorder.dataset.meta.total_episodes - 1,
-                               frames=saved_frames, steps=metadata.get('steps_used'),
-                               lighting=env.config.get('lighting_sample'),
-                               lighting_validation=env.lighting_validation,
-                               ssgi={'enabled': env.ssgi_enabled, 'mjcf_active': True,
-                                     'parameters': env.config['ssgi']},
-                               initial_blocks=metadata.get('initial_blocks'),
-                               initial_end_effector_pose=metadata.get('initial_end_effector_pose'),
-                               initial_arm_qpos=metadata.get('initial_arm_qpos'))
-                    append_jsonl(attempt_log, log)
-                    append_jsonl(episode_log, log)
-                    print(f"SAVED {counts[(pick, place)]}/{args.episodes_per_combination} {pick}->{place} "
-                          f"seed={seed} frames={saved_frames}", flush=True)
-                except RecordingError as exc:
-                    log.update(result='error', failure=f'{type(exc).__name__}: {exc}',
-                               lighting=env.config.get('lighting_sample'),
-                               lighting_validation=env.lighting_validation)
-                    append_jsonl(attempt_log, log)
-                    if recorder is not None:
-                        recorder.discard()
-                    raise
-                finally:
-                    env.close()
+                saved_frames = recorder.commit()
+                counts[pair] += 1
+                successes += 1
+                log.update(result='success', episode_index=recorder.dataset.meta.total_episodes - 1,
+                           frames=saved_frames, steps=metadata.get('steps_used'),
+                           lighting=env.config.get('lighting_sample'),
+                           lighting_validation=env.lighting_validation,
+                           ssgi={'enabled': env.ssgi_enabled, 'mjcf_active': True,
+                                 'parameters': env.config['ssgi']},
+                           initial_blocks=metadata.get('initial_blocks'),
+                           initial_end_effector_pose=metadata.get('initial_end_effector_pose'),
+                           initial_arm_qpos=metadata.get('initial_arm_qpos'))
+                append_jsonl(attempt_log, log)
+                append_jsonl(episode_log, log)
+                print(f"SAVED {counts[pair]}/{args.episodes} {pick}->{place} "
+                      f"seed={seed} frames={saved_frames}", flush=True)
+            except RecordingError as exc:
+                log.update(result='error', failure=f'{type(exc).__name__}: {exc}',
+                           lighting=env.config.get('lighting_sample'),
+                           lighting_validation=env.lighting_validation)
+                append_jsonl(attempt_log, log)
+                if recorder is not None:
+                    recorder.discard()
+                raise
+            finally:
+                env.close()
         if recorder is None:
             raise RuntimeError('no episode was recorded')
     finally:
         if recorder is not None:
             recorder.finalize()
-    expected = {pair: args.episodes_per_combination for pair in TASKS}
+    expected = {pair: args.episodes}
     result = verify_dataset(output_path, expected, expect_video=args.save_video)
     result.update(attempts=attempts, successes=successes, failures=failures,
                   output=str(output_path), seed=args.seed)
