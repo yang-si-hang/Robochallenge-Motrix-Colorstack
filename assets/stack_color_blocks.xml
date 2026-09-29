@@ -249,9 +249,9 @@
         </body>
       </body>
     </body>
-    <light name="window_key" pos="0.45 1.8 1.8" dir="-0.2240807384852671 -0.6365802977562851 -0.7379385795229957" mode="fixed" directional="true" castshadow="true" ambient="0.06 0.065 0.075" diffuse="0.3368829659049603 0.36824529391617494 0.41006173126446116" specular="0.02 0.02 0.02" />
-    <light name="ceiling_fill" pos="0.25 -0.6 2.1" dir="0.1 0.2 -1.0" mode="fixed" directional="false" castshadow="false" ambient="0.01 0.01 0.01" diffuse="0.1335519542632592 0.12309784492618764 0.1126437355891161" specular="0.0 0.0 0.0" cutoff="75" attenuation="1.0 0.25 0.1" />
-    <light name="rear_fill" pos="0.45 -1.2 1.5" dir="0.0 0.55 -0.83" mode="fixed" directional="true" castshadow="false" ambient="0.0 0.0 0.0" diffuse="0.08363287469657235 0.08363287469657235 0.08363287469657235" specular="0.0 0.0 0.0" />
+    <light name="window_key" pos="0.45 1.8 1.8" dir="-0.3569921740412099 -0.5412302296274478 -0.761332007872223" mode="fixed" directional="true" castshadow="true" ambient="0.06 0.065 0.075" diffuse="0.32793859551216636 0.3565382477171139 0.39467111732371063" specular="0.02 0.02 0.02" />
+    <light name="ceiling_fill" pos="0.25 -0.6 2.1" dir="0.1 0.2 -1.0" mode="fixed" directional="false" castshadow="false" ambient="0.01 0.01 0.01" diffuse="0.10105618756204679 0.09152297016039763 0.08198975275874844" specular="0.0 0.0 0.0" cutoff="75" attenuation="1.0 0.25 0.1" />
+    <light name="rear_fill" pos="0.45 -1.2 1.5" dir="0.0 0.55 -0.83" mode="fixed" directional="true" castshadow="false" ambient="0.0 0.0 0.0" diffuse="0.07626573921319345 0.07626573921319345 0.07626573921319345" specular="0.0 0.0 0.0" />
     <camera name="global_rgb" pos="0.8500000000000001 0.0 1.04" xyaxes="0.0 1.0 0 -0.643 0.0 0.766" fovy="60.0" />
     <geom name="floor" type="plane" pos="0 0 -0.08" size="5.0 5.0 0.1" rgba="0.38 0.4 0.43 1.0" />
     <geom name="wall_x_pos" type="box" pos="5.05 0 1.96" size="0.05 5.1 2.04" rgba="1.0 1.0 1.0 1.0" contype="0" conaffinity="0" />
