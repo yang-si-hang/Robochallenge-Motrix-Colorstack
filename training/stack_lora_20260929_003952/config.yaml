@@ -1,0 +1,107 @@
+assets_base_dir:
+    value: ./assets
+batch_size:
+    value: 33
+checkpoint_base_dir:
+    value: ./checkpoints
+data:
+    value:
+        assets:
+            asset_id: null
+            assets_dir: null
+        base_config:
+            action_sequence_keys:
+                - actions
+            action_space: null
+            asset_id: null
+            data_transforms:
+                inputs: []
+                outputs: []
+            datasets: []
+            model_transforms:
+                inputs: []
+                outputs: []
+            norm_stats: null
+            prompt_from_task: true
+            repack_transforms:
+                inputs: []
+                outputs: []
+            repo_id: null
+            rlds_data_dir: null
+            use_quantile_norm: false
+        repo_id: color_stack_v3.1_filter_vid
+ema_decay:
+    value: null
+exp_name:
+    value: stack_lora_20260929_003952
+freeze_filter:
+    value: All(PathRegex(pattern=re.compile('.*llm.*'), sep='/'), Not(PathRegex(pattern=re.compile('.*lora.*'), sep='/')))
+fsdp_devices:
+    value: 1
+keep_period:
+    value: 5000
+log_interval:
+    value: 200
+lr_schedule:
+    value:
+        decay_lr: 2.5e-06
+        decay_steps: 30000
+        peak_lr: 2.5e-05
+        warmup_steps: 1000
+model:
+    value:
+        action_dim: 32
+        action_expert_variant: gemma_300m_lora
+        action_horizon: 20
+        discrete_state_input: true
+        dtype: bfloat16
+        ki_fast_loss_weight: 1
+        ki_fast_tokenizer_path: /root/autodl-tmp/openpi_assets/models/fast
+        ki_fast_tokenizer_revision: null
+        ki_flow_loss_weight: 1
+        ki_max_token_len: 256
+        knowledge_insulation: false
+        max_token_len: 200
+        paligemma_variant: gemma_2b_lora
+        pi05: true
+        pytorch_compile_mode: max-autotune
+        train_time_rtc_max_delay: 0
+name:
+    value: pi05_ur10e_stack_lora
+num_train_steps:
+    value: 25000
+num_workers:
+    value: 12
+optimizer:
+    value:
+        b1: 0.9
+        b2: 0.95
+        clip_gradient_norm: 1
+        eps: 1e-08
+        weight_decay: 1e-10
+overwrite:
+    value: false
+policy_metadata:
+    value:
+        action_dim: 10
+        action_representation: tcp_relative_xyz_rot6d_absolute_gripper
+        control_frequency_hz: 20
+        execution_horizon: 10
+        prediction_horizon: 20
+project_name:
+    value: openpi
+pytorch_training_precision:
+    value: bfloat16
+pytorch_weight_path:
+    value: null
+resume:
+    value: false
+save_interval:
+    value: 1000
+seed:
+    value: 42
+wandb_enabled:
+    value: true
+weight_loader:
+    value:
+        params_path: gs://openpi-assets/checkpoints/pi05_base/params
