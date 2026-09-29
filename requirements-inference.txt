@@ -1,0 +1,7 @@
+# Match packages/openpi-client in the checkpoint server worktree (HEAD 8189eb3).
+openpi-client @ git+https://github.com/yang-si-hang/openpi05-post-train.git@8189eb39dac62dff879990cbef4cb1e2e4f04709#subdirectory=packages/openpi-client
+dm-tree>=0.1.8
+msgpack>=1.0.5
+numpy>=1.22.4,<3.0.0
+Pillow>=9.0.0
+websockets>=11.0
