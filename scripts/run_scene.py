@@ -1,4 +1,4 @@
-"""Run a seeded color-block stacking trajectory and save recordings."""
+"""Run a fixed-start color-block stacking trajectory and save recordings."""
 import argparse
 import importlib.metadata
 import json
@@ -21,11 +21,16 @@ from lighting_randomization import capture_ready, image_quality, sample_lighting
 CAMERA_NAMES = ('global_rgb', 'wrist_rgb')
 DATASET_FPS = 20
 DATASET_VIDEO_CODEC = 'h264_nvenc'
+DATASET_VIDEO_GOP = 1
+DATASET_VIDEO_BFRAMES = None
+DATASET_VIDEO_QP = 21
+DATASET_VIDEO_PRESET = 'p6'
+DATASET_VIDEO_ENCODER_THREADS = 8
+DATASET_IMAGE_WRITER_THREADS = 8
 GUI_RENDER_HZ = 30
 TRACE_INTERVAL = 10
 POSITION_REACHED_TOLERANCE = 0.015
 ORIENTATION_REACHED_TOLERANCE = 0.035
-ARM_REACHED_TOLERANCE = 0.025
 TRAVEL_HEIGHT_ABOVE_TABLE_M = 0.2
 APPROACH_HEIGHT_ABOVE_BLOCK_M = 0.05
 STACK_RELEASE_GAP_M = 0.003
@@ -36,12 +41,22 @@ STAGE_TIMEOUT_SECONDS = 16.0
 TRAJECTORY_SAMPLE_SECONDS = 0.02
 TCP_TRANSLATION_SPEED_MPS = 0.12
 TCP_ROTATION_SPEED_RADPS = 0.65
-INITIAL_EE_POSITION_BOUNDS = ((-0.1, 0.1), (-0.1, 0.1), (0.2, 0.3))
-INITIAL_EE_QUATERNION = (1.0, 0.0, 0.0, 0.0)
-INITIAL_EE_YAW_RANGE_DEG = (-40.0, 40.0)
+# Fixed TCP pose relative to the tabletop frame: XY origin at table center, Z origin at its top.
+INITIAL_EE_POSITION_RELATIVE_TO_TABLE = (-0.1, 0.1, 0.2)
+# Quaternion order is xyzw: 180 degrees about the global X axis.
+INITIAL_EE_QUATERNION = (0.7071, -0.7071, 0.0, 0.0)
 COLORS = ('yellow', 'orange', 'sky_blue')
 POSE_FEATURE_NAMES = ('x', 'y', 'z', 'rot6d_0', 'rot6d_1', 'rot6d_2',
                       'rot6d_3', 'rot6d_4', 'rot6d_5')
+
+
+def json_default(value):
+    """Convert NumPy values to standard JSON types for run diagnostics."""
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    raise TypeError(f'Object of type {type(value).__name__} is not JSON serializable')
 
 
 def pose_to_xyz_rot6d(pose):
@@ -106,7 +121,7 @@ def prepare_output_dir(output_arg):
 class LeRobotRecorder:
     def __init__(self, output_dir, initial_images):
         try:
-            from lerobot.datasets.lerobot_dataset import LeRobotDataset
+            from lerobot_video_encoder import ConfigurableVideoDataset
         except ImportError as exc:
             raise RuntimeError('Headless recording requires LeRobot; install requirements-sim.txt') from exc
         image_features = {
@@ -130,11 +145,17 @@ class LeRobotRecorder:
         while self.dataset_path.exists() and any(self.dataset_path.iterdir()):
             self.dataset_path = output_dir / f'lerobot_dataset_{suffix:03d}'
             suffix += 1
-        self.dataset = LeRobotDataset.create(
+        self.dataset = ConfigurableVideoDataset.create(
             repo_id='local/stack_color_blocks', root=self.dataset_path,
-            fps=DATASET_FPS, robot_type='ur5e', features=features,
-            vcodec=DATASET_VIDEO_CODEC,
+            fps=DATASET_FPS, robot_type='ur5e', features=features, use_videos=True,
+            vcodec=DATASET_VIDEO_CODEC, image_writer_processes=0,
+            image_writer_threads=DATASET_IMAGE_WRITER_THREADS,
+            encoder_threads=DATASET_VIDEO_ENCODER_THREADS,
         )
+        (self.dataset.video_gop, self.dataset.video_bframes,
+         self.dataset.video_qp, self.dataset.video_preset) = (
+            DATASET_VIDEO_GOP, DATASET_VIDEO_BFRAMES,
+            DATASET_VIDEO_QP, DATASET_VIDEO_PRESET)
         self.frame_count = 0
 
     def add_frame(self, obs, action, images, task, actual_tcp_pose):
@@ -250,25 +271,20 @@ def aligned_down_quaternion(block_pose, reference_quaternion):
     return min(candidates, key=lambda q: quat_error(q, reference_quaternion))
 
 
-def sample_initial_pose(env, seed):
+def sample_initial_pose(env, seed=None):
+    """Solve the fixed tabletop-relative TCP pose into a reachable arm state."""
+    table = env.config['table']
+    center = np.asarray(table['center'], dtype=float)
+    half_size = np.asarray(table['half_size'], dtype=float)
+    x, y, z = INITIAL_EE_POSITION_RELATIVE_TO_TABLE
+    position = np.array([center[0] + x, center[1] + y, center[2] + half_size[2] + z])
+    quaternion = np.asarray(INITIAL_EE_QUATERNION, dtype=float)
+    pose = np.r_[position, quaternion / np.linalg.norm(quaternion)]
     chain = IkChain(env.model, end_link='grip_base', start_link='base',
                     end_effector_offset=END_EFFECTOR_OFFSET)
-    table_center = np.asarray(env.config['table']['center'], dtype=float)
-    rng = np.random.default_rng(np.random.SeedSequence([seed, 2]))
-    yaw_rng = np.random.default_rng(np.random.SeedSequence([seed, 4]))
-    yaw = np.deg2rad(yaw_rng.uniform(*INITIAL_EE_YAW_RANGE_DEG))
-    world_z_yaw = np.array([0.0, 0.0, np.sin(yaw/2), np.cos(yaw/2)])
-    initial_quaternion = quat_multiply(world_z_yaw, INITIAL_EE_QUATERNION)
-    for _ in range(128):
-        offset = np.array([rng.uniform(np.nextafter(lo, hi), np.nextafter(hi, lo))
-                           for lo, hi in INITIAL_EE_POSITION_BOUNDS])
-        pose = np.r_[table_center + offset, initial_quaternion]
-        try:
-            result = solve_ik(pose, HOME_QPOS)
-            return chain, pose, np.asarray(result.joint_angles, dtype=float), float(np.rad2deg(yaw))
-        except (RuntimeError, ValueError):
-            continue
-    raise RuntimeError('could not sample a reachable initial end-effector pose')
+    result = solve_ik(pose, HOME_QPOS)
+    yaw_deg = float(np.rad2deg(yaw_from_pose(pose)))
+    return chain, pose, np.asarray(result.joint_angles, dtype=float), yaw_deg
 
 
 def build_stages(env, initial_pose, initial_qpos, pick_color, place_color, seed_value, ik_solver):
@@ -288,7 +304,7 @@ def build_stages(env, initial_pose, initial_qpos, pick_color, place_color, seed_
 
     def pose(x, y, z, q): return np.r_[x, y, z, q]
     stages = [
-        ('move_above_pick', pose(pick[0], pick[1], travel_z, initial_pose[3:]), 0.0, 'pose'),
+        ('move_above_pick', pose(pick[0], pick[1], initial_pose[2], initial_pose[3:]), 0.0, 'pose'),
         ('approach_pick', pose(pick[0], pick[1], approach_pick_z, initial_pose[3:]), 0.0, 'pose'),
         ('align_pick', pose(pick[0], pick[1], approach_pick_z, pick_q), 0.0, 'pose'),
         ('descend_pick', pose(pick[0], pick[1], pick_tcp_z, pick_q), 0.0, 'pose'),
@@ -300,7 +316,6 @@ def build_stages(env, initial_pose, initial_qpos, pick_color, place_color, seed_
         ('descend_place', pose(place[0], place[1], release_tcp_z, place_q), 255.0, 'pose'),
         ('open_gripper', None, 0.0, 'hold'),
         ('lift_after_place', pose(place[0], place[1], travel_z, place_q), 0.0, 'pose'),
-        ('return_initial', None, 0.0, 'home'),
     ]
     # Solve the complete nominal route before actuating the robot.
     solved = []
@@ -319,9 +334,6 @@ def build_stages(env, initial_pose, initial_qpos, pick_color, place_color, seed_
                   'position_error_m': result.position_error,
                   'orientation_error_rad': result.orientation_error,
                   'iterations': result.iterations}
-        elif kind == 'home':
-            arm_goal = np.asarray(initial_qpos, dtype=float)
-            ik = None
         else:
             ik = None
         solved.append({'name': name, 'target_pose': None if target_pose is None else target_pose.copy(),
@@ -362,8 +374,11 @@ def metadata_base(env, args, initial):
         'home_qpos': list(HOME_QPOS),
         'robot_base_pose': env.model.get_body('base').get_pose(env.data).tolist(),
         'initial_end_effector_pose': initial['initial_end_effector_pose'],
+        'initial_requested_end_effector_pose': initial['initial_requested_end_effector_pose'],
         'initial_ee_yaw_deg': initial['initial_ee_yaw_deg'],
-        'initial_ee_yaw_range_deg': list(INITIAL_EE_YAW_RANGE_DEG),
+        'initial_pose_source': 'script_global_constants',
+        'initial_ee_position_relative_to_table_m': list(INITIAL_EE_POSITION_RELATIVE_TO_TABLE),
+        'initial_ee_quaternion_xyzw': list(INITIAL_EE_QUATERNION),
         'initial_arm_qpos': initial['initial_arm_qpos'],
         'initial_blocks': {n: p.tolist() for n, p in initial['blocks'].items()},
         'initial_background': {n: p.tolist() for n, p in initial['background'].items()},
@@ -384,6 +399,7 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
     env.model.forward_kinematic(env.data)
     env.controller.command = initial_qpos.copy()
     initial['initial_end_effector_pose'] = chain.get_end_effector_pose(env.data).tolist()
+    initial['initial_requested_end_effector_pose'] = initial_pose.tolist()
     initial['initial_arm_qpos'] = initial_qpos.tolist()
     initial['initial_ee_yaw_deg'] = initial_ee_yaw_deg
     initial['blocks'] = env.get_observation()['blocks']
@@ -402,10 +418,12 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
                          'resolutionscale', 'raycount', 'stepcount', 'thickness', 'intensity',
                          'gidenoiseoffset', 'rraycount', 'rdenoiseoffset')}},
             'initial_end_effector_pose': initial['initial_end_effector_pose'],
+            'initial_requested_end_effector_pose': initial_pose.tolist(),
             'initial_arm_qpos': initial_qpos.tolist(),
             'initial_blocks': {n: p.tolist() for n, p in initial['blocks'].items()},
-        }, indent=2, ensure_ascii=False))
-        (output_dir / 'trace.json').write_text(json.dumps(trace, indent=2, ensure_ascii=False))
+        }, indent=2, ensure_ascii=False, default=json_default))
+        (output_dir / 'trace.json').write_text(
+            json.dumps(trace, indent=2, ensure_ascii=False, default=json_default))
         raise
     sample_interval_steps = int(round(1.0 / (DATASET_FPS * env.dt)))
     if abs(sample_interval_steps * env.dt - 1.0 / DATASET_FPS) > 1e-9:
@@ -472,6 +490,8 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
                 travel_z = (env.config['table']['center'][2] + env.config['table']['half_size'][2]
                             + TRAVEL_HEIGHT_ABOVE_TABLE_M)
                 if name == 'move_above_pick':
+                    stage_target[:2] = pick_pose[:2]
+                    stage_target[2] = initial_pose[2]
                     stage_target[3:] = initial_pose[3:]
                 elif name == 'approach_pick':
                     stage_target[:2] = pick_pose[:2]
@@ -529,16 +549,7 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
             reached_since = None
             stage_reason = 'target_reached'
             timeout = STAGE_TIMEOUT_SECONDS
-            if name == 'return_initial': timeout = 24.0
             if name == 'open_gripper': timeout = 5.0
-            if name == 'return_initial':
-                delta = np.asarray(initial_qpos, dtype=float) - actual_start_qpos
-                trajectory_duration = max(0.5, 1.875*np.max(np.abs(delta))/MAX_SPEED)
-                trajectory_count = max(1, int(np.ceil(trajectory_duration/TRAJECTORY_SAMPLE_SECONDS)))
-                trajectory_joints = np.asarray([
-                    actual_start_qpos + smoothstep5(i/trajectory_count)*delta
-                    for i in range(trajectory_count+1)
-                ])
             timeout = max(timeout, trajectory_duration + 4.0)
             while step_index < args.max_steps:
                 progress = 1.0 if trajectory_duration <= 0 else (env.time-start_time)/trajectory_duration
@@ -563,11 +574,6 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
                                           POSITION_REACHED_TOLERANCE)
                     at_target = (sample_progress >= 1.0 and position_error <= position_tolerance and
                                  orientation_error <= ORIENTATION_REACHED_TOLERANCE)
-                elif stage['kind'] == 'home':
-                    joint_error = float(np.max(np.abs(last_obs['arm_qpos'] - initial_qpos)))
-                    position_error = joint_error
-                    orientation_error = 0.0
-                    at_target = sample_progress >= 1.0 and joint_error <= ARM_REACHED_TOLERANCE
                 else:
                     position_error = orientation_error = None
                     at_target = True
@@ -641,8 +647,9 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
         # Continue the shared loop briefly after the last phase and verify true support contact and rest.
         rest_start = env.time
         rest_positions = []
+        hold_qpos = np.asarray(last_obs['arm_qpos'], dtype=float).copy()
         while env.time - rest_start < 0.5 and step_index < args.max_steps:
-            last_obs = env.step({'arm_qpos': initial_qpos, 'gripper_target': 0.0})
+            last_obs = env.step({'arm_qpos': hold_qpos, 'gripper_target': 0.0})
             step_index += 1
             rest_positions.append(last_obs['blocks'][args.pick_color][:3].copy())
             if step_index % TRACE_INTERVAL == 0:
@@ -659,16 +666,18 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
         expected_delta = 2*env.config['block']['half_size']
         picked_tilt = tilt_from_pose(picked)
         support_tilt = tilt_from_pose(support)
-        final_joint_error = float(np.max(np.abs(last_obs['arm_qpos'] - initial_qpos)))
         stack_contact = (xy_error <= 0.01 and abs(height_delta - expected_delta) <= 0.008
                          and picked_tilt <= 0.15 and support_tilt <= 0.15)
-        arm_returned = final_joint_error <= ARM_REACHED_TOLERANCE
-        gripper_open = float(np.max(last_obs['gripper_qpos'])) < 0.12
+        final_tcp_pose = np.asarray(chain.get_end_effector_pose(env.data), dtype=float)
+        table_top = env.config['table']['center'][2] + env.config['table']['half_size'][2]
+        arm_lifted = bool(final_tcp_pose[2] >=
+                          table_top + TRAVEL_HEIGHT_ABOVE_TABLE_M - POSITION_REACHED_TOLERANCE)
+        gripper_open = bool(np.max(last_obs['gripper_qpos']) < 0.12)
         if not stack_contact:
             raise RuntimeError(f'stack verification failed at stage verify_stack: XY error {xy_error:.5f} m, '
                                f'center height delta {height_delta:.5f} m')
-        if not arm_returned or not gripper_open:
-            raise RuntimeError(f'final posture verification failed: arm error {final_joint_error:.5f}, '
+        if not arm_lifted or not gripper_open:
+            raise RuntimeError(f'final posture verification failed: arm lifted={arm_lifted}, '
                                f'gripper qpos {last_obs["gripper_qpos"].tolist()}')
         if len(rest_positions) >= 2 and np.linalg.norm(rest_positions[-1] - rest_positions[0]) > 0.006:
             raise RuntimeError('stack verification failed: picked block did not settle')
@@ -686,6 +695,12 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
         metadata.update({'success': failure is None, 'failure': failure, 'steps_used': step_index,
                          'dataset_fps': DATASET_FPS if recorder is not None else None,
                          'dataset_video_codec': DATASET_VIDEO_CODEC if recorder is not None else None,
+                         'dataset_video_encoder': ({'gop': DATASET_VIDEO_GOP,
+                                                    'bframes': 0 if DATASET_VIDEO_GOP == 1 else DATASET_VIDEO_BFRAMES,
+                                                    'qp': DATASET_VIDEO_QP,
+                                                    'preset': DATASET_VIDEO_PRESET,
+                                                    'threads': DATASET_VIDEO_ENCODER_THREADS}
+                                                   if recorder is not None else None),
                          'dataset_frames': recorder.frame_count if recorder is not None else 0,
                          'dataset_path': str(recorder.dataset_path) if recorder is not None else None,
                          'dataset_state_features': ([*POSE_FEATURE_NAMES, 'gripper_position']
@@ -704,11 +719,13 @@ def run_stack(env, args, output_dir, recorder=None, write_diagnostics=True, rais
                                               'picked_block_tilt_rad': picked_tilt if failure is None else None,
                                               'support_block_tilt_rad': support_tilt if failure is None else None,
                                               'stack_contact': stack_contact if failure is None else False,
-                                              'arm_returned': arm_returned if failure is None else False,
+                                              'arm_lifted': arm_lifted if failure is None else False,
                                               'gripper_open': gripper_open if failure is None else False}})
         if write_diagnostics:
-            (output_dir / 'run.json').write_text(json.dumps(metadata, indent=2, ensure_ascii=False))
-            (output_dir / 'trace.json').write_text(json.dumps(trace, indent=2, ensure_ascii=False))
+            (output_dir / 'run.json').write_text(
+                json.dumps(metadata, indent=2, ensure_ascii=False, default=json_default))
+            (output_dir / 'trace.json').write_text(
+                json.dumps(trace, indent=2, ensure_ascii=False, default=json_default))
     if failure and raise_on_failure:
         raise RuntimeError(failure)
     if failure is None:
@@ -759,7 +776,7 @@ def main():
             candidate.close()
         if env is None:
             raise RuntimeError('No lighting sample passed camera validation: '
-                               + json.dumps(rejected, ensure_ascii=False))
+                               + json.dumps(rejected, ensure_ascii=False, default=json_default))
     else:
         base_config['ssgi']['enabled'] = ssgi_enabled
         build(base_config)

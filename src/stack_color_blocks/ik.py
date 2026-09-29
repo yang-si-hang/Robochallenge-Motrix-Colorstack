@@ -14,7 +14,7 @@ from .control import ARM_JOINTS, HOME_QPOS
 
 ROOT = Path(__file__).resolve().parents[2]
 SCENE_PATH = ROOT / "assets" / "stack_color_blocks.xml"
-END_EFFECTOR_OFFSET = (0.0, 0.0, 0.145, 0.0, 0.0, 0.0, 1.0)
+END_EFFECTOR_OFFSET = (0.0, 0.0, 0.145, 0.0, 0.0, 0.7071, 0.7071)
 POSITION_TOLERANCE = 1e-3  # metres
 ORIENTATION_TOLERANCE = 1e-3  # radians
 
