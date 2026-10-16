@@ -8,26 +8,39 @@
 
 策略使用 [OpenPI π0.5 后训练仓库](https://github.com/yang-si-hang/openpi05-post-train)。导出的[训练配置](training/stack_lora_20260929_003952/config.yaml)记录 batch size 33、随机种子 42、计划 25,000 step、峰值学习率 2.5×10⁻⁵、1,000 step warmup、动作预测长度 20 和执行长度 10，采用 LoRA 变体及 bfloat16。[loss CSV](training/stack_lora_20260929_003952/loss.csv)覆盖 step 0–18,000，采样值从 **0.2381** 降至 **0.001623**。评测通过 OpenPI socket 服务闭环执行动作，保存逐轮结果与双视角视频。
 
-**评测结果。** 两组评测均为 20 轮初始场景，分别复用训练集种子和使用未见种子。未见种子 `20260928`–`20260947` 与发布训练集的 105 条采集日志无重合。
+**标准 LoRA 微调结果。** 以下为未使用 Knowledge Insulation 的标准 LoRA 微调评测结果。每次评测均运行 20 轮。训练集种子从发布数据的采集日志中抽取，两次使用相同的种子；未见种子评测使用 `20260928`–`20260947`，与发布训练集的 105 条采集日志无重合。
 
-| 指标 | 训练集种子，checkpoint `16000` | 未见种子，checkpoint `18000` |
-| --- | ---: | ---: |
-| 任务成功 | 0/20（0%） | 3/20（15%） |
-| 抓取阶段成功 | 20/20（100%） | 19/20（95%） |
-| 稳定放置成功 | 0/20（0%） | 3/20（15%） |
-| 平均代理得分 | 3.45/10 | 4.25/10 |
-| 总分 | 69/200 | 85/200 |
-| 平均仿真时长 | 70.64 秒 | 62.25 秒 |
+**训练集种子 rollout（标准 LoRA）**
 
-[训练集种子评测](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/train20)和[未见种子评测](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/18000_heldout20)均已上传，包含汇总、20 轮逐轮记录和双视角 LeRobot 视频。未见种子评测成功回合对应种子 `20260929`、`20260942`、`20260944`。
+| 指标 | checkpoint `16000` | checkpoint `20000` | checkpoint `24999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 0/20（0%） | 3/20（15%） | 4/20（20%） |
+| 抓取阶段成功 | 20/20（100%） | 15/20（75%） | 18/20（90%） |
+| 放置阶段成功 | 0/20（0%） | 5/20（25%） | 5/20（25%） |
+| 平均代理得分 | 3.45/10 | 4.275/10 | 4.85/10 |
+| 总分 | 69/200 | 85.5/200 | 97/200 |
+| 平均仿真时长 | 70.64 秒 | 65.12 秒 | 68.76 秒 |
 
-**结论。** checkpoint `18000` 在未见种子中完成 3 次叠放；17 次失败中，16 次完成抓取但未稳定放置，1 次未完成抓取（种子 `20260938`）。两组评测使用不同 checkpoint，结果分别报告。得分由 MotrixSim 的阶段判定计算；评分实现见[评测说明](docs/robochallenge_checkpoint_scoring_implementation.md)。
+**未见种子 rollout（标准 LoRA）**
 
-训练轮次需要继续增加并评测。
+| 指标 | checkpoint `18000` | checkpoint `20000` | checkpoint `24999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 3/20（15%） | 4/20（20%） | 2/20（10%） |
+| 抓取阶段成功 | 19/20（95%） | 16/20（80%） | 18/20（90%） |
+| 放置阶段成功 | 3/20（15%） | 5/20（25%） | 5/20（25%） |
+| 平均代理得分 | 4.25/10 | 4.25/10 | 4.45/10 |
+| 总分 | 85/200 | 85/200 | 89/200 |
+| 平均仿真时长 | 62.25 秒 | 65.91 秒 | 68.07 秒 |
+
+[训练集种子评测](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/train20)、[checkpoint `20000`](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/20000_train20)和[checkpoint `24999`](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/24999_train20)的结果已上传；未见种子评测的 [checkpoint `18000`](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/18000_heldout20)、[checkpoint `20000`](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/20000_heldout20)和[checkpoint `24999`](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/24999_heldout20)结果也已上传。目录包含汇总、逐轮记录和双视角 LeRobot 视频。checkpoint `18000` 未见种子评测成功回合对应种子 `20260929`、`20260942`、`20260944`。
+
+**标准 LoRA 结论。** 训练集种子上，checkpoint `20000` 和 `24999` 分别完成 3/20 和 4/20 次任务，平均得分为 4.275/10 和 4.85/10。未见种子上，checkpoint `18000`、`20000`、`24999` 分别完成 3、4、2 次；`24999` 的平均代理得分最高（4.45/10），但任务成功率为 10%，低于 `20000` 的 20%。放置阶段通过不一定代表最终任务成功。得分由 MotrixSim 的阶段判定计算；评分实现见[评测说明](docs/robochallenge_checkpoint_scoring_implementation.md)。
+
+训练集种子上的提升需结合未见种子结果判断；checkpoint `24999` 的训练集任务成功率为 20%，未见种子任务成功率为 10%。
 
 | 补充说明 | 内容 |
 | --- | --- |
-| 模型权重 | [LoRA checkpoint `16000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/16000) 与[未见种子评测使用的 `18000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/18000) 均已上传 |
+| 模型权重 | [LoRA checkpoint `16000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/16000)、[`18000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/18000)、[`20000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/20000)和[`24999`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/24999)均已上传 |
 | 失败案例分析 | 模型动作块预测误差使后续观测逐渐偏离训练数据分布，进而导致后续操作失败 |
 
 ## 交付物索引
@@ -37,13 +50,17 @@
 | 源码与复现命令 | 本仓库 `scripts/reproduce.sh`；[OpenPI 训练与推理仓库](https://github.com/yang-si-hang/openpi05-post-train) |
 | 合成数据与数据卡 | [Hugging Face 数据集及数据卡](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1)；数据卡为该页面的 `README.md`。 |
 | 训练参数与 loss | [导出的训练配置](training/stack_lora_20260929_003952/config.yaml)、[loss CSV](training/stack_lora_20260929_003952/loss.csv)。 |
-| 模型 checkpoint | [LoRA checkpoint `16000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/16000) 与 [`18000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/18000) 已上传至同一模型仓库 |
+| 模型 checkpoint | [LoRA checkpoint `16000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/16000)、[`18000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/18000)、[`20000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/20000)和[`24999`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/24999)已上传至同一模型仓库 |
 | 20 轮训练集种子评测 | [训练集种子评测目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/train20) |
+| checkpoint `24999` 训练集种子评测 | [公开结果目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/24999_train20)；本地 `artifacts/score_24999_train20/`，成功 4/20，平均得分 4.85/10 |
+| checkpoint `20000` 训练集种子评测 | [公开结果目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/20000_train20)；本地 `artifacts/score_20000_train20/`，成功 3/20，平均得分 4.275/10 |
 | 20 轮未见种子评测 | [公开评测目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/18000_heldout20)；本地对应 `artifacts/score_18000_heldout20/`，成功 3/20，平均得分 4.25/10 |
+| checkpoint `20000` 未见种子评测 | [公开结果目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/20000_heldout20)；本地 `artifacts/score_20000_heldout20/`，成功 4/20，平均得分 4.25/10 |
+| checkpoint `24999` 未见种子评测 | [公开结果目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/24999_heldout20)；本地 `artifacts/score_24999_heldout20/`，成功 2/20，平均得分 4.45/10 |
 | 方法与结果总结 | 本 README 上方“方法与结果总结”章节。 |
 | Demo 录屏 | [训练集种子 Demo 视频](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/train20/lerobot_dataset/videos)，包含固定视角和腕部视角 |
 
-训练记录来自 W&B run `stack_lora_20260929_003952`。CSV 包含 step 0–18000、每 200 step 一个 loss 采样点，以及 W&B 导出的 MIN/MAX 列。[模型仓库 `lora/16000/`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/16000) 已包含 `params/`、`train_state/` 和 `assets/color_stack_v3.1_filter_vid/norm_stats.json`。未见种子评测对应的 [`18000` checkpoint](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/18000) 已上传至同一模型仓库。训练源码 Git commit 为 `38af0a45f876878719053b895be87115f03695f1`。
+训练记录来自 W&B run `stack_lora_20260929_003952`。CSV 包含 step 0–18000、每 200 step 一个 loss 采样点，以及 W&B 导出的 MIN/MAX 列。[模型仓库 `lora/16000/`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/16000) 已包含 `params/`、`train_state/` 和 `assets/color_stack_v3.1_filter_vid/norm_stats.json`。[`18000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/18000)、[`20000`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/20000)和[`24999`](https://huggingface.co/y-s-h/Motrix_Robochallenge_Colorblock/tree/main/lora/24999) checkpoint 也已上传至同一模型仓库。训练源码 Git commit 为 `38af0a45f876878719053b895be87115f03695f1`。
 
 ## 一键复现入口
 
@@ -124,7 +141,23 @@ python3.10 -m venv .venv
 ./.venv/bin/python -m pip install -r requirements-inference.txt
 ```
 
-在 OpenPI 服务端启动自己的 checkpoint（服务命令及环境示例见 [场景说明](README_SCENE.md)），确保本机可通过 `--host`、`--port` 访问。评测分为以下两组，分别保存结果。
+在 OpenPI 服务端启动自己的 checkpoint（服务命令及环境示例见 [场景说明](README_SCENE.md)），确保本机可通过 `--host`、`--port` 访问。评测按训练集种子和未见种子分组，分别保存结果。
+
+### 连接远端 OpenPI 服务
+
+若 OpenPI 服务运行在远端服务器，可在本地电脑另开一个终端建立 SSH 隧道，将远端服务的 `8000` 端口转发到本地：
+
+```bash
+ssh -N -L 8000:127.0.0.1:8000 -p 42416 root@connect.bjb2.seetacloud.com
+```
+
+这里 `42416` 是 SSH 端口；`-L` 左侧的 `8000` 是本地端口，右侧的 `127.0.0.1:8000` 是远端服务器上 OpenPI 服务的地址。输入 SSH 密码后，命令会留在前台运行且不显示 shell 提示符，这是 `-N` 隧道连接的正常表现，请保持该终端开启。然后在另一个本地终端检查连接：
+
+```bash
+curl http://127.0.0.1:8000/healthz
+```
+
+服务正常时应返回 `OK`。随后在评测命令中使用 `--host 127.0.0.1 --port 8000`。评测结束后，在运行 SSH 隧道的终端按 `Ctrl+C` 断开连接。若本地 `8000` 端口已被占用，可将隧道改为 `-L 8001:127.0.0.1:8000`，并将评测命令的 `--port` 改为 `8001`。
 
 ### 训练集种子：检查训练效果
 
@@ -141,6 +174,10 @@ python3.10 -m venv .venv
 
 20 轮训练集种子评测的[汇总、逐轮记录和双视角视频](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/train20)已上传至数据集仓库 `evaluation/train20/` 目录，本地对应 `artifacts/score_color_stack_v3.1_filter_train20/`。汇总结果：checkpoint 标签 `16000`、任务成功率 **0/20（0%）**、平均得分 **3.45/10**、抓取阶段成功率 **100%**、放置阶段成功率 **0%**、平均仿真时长 **70.64 秒**。双视角 LeRobot 视频用于 Demo 展示。
 
+[`24999` 训练集评测目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/24999_train20)和本地 `artifacts/score_24999_train20/summary.json` 记录 checkpoint 标签 `24999` 在同一组 20 个训练集种子上的任务成功率 **20%（4/20）**、平均得分 **4.85/10**、抓取阶段成功率 **90%（18/20）**、放置阶段成功率 **25%（5/20）**、平均仿真时长 **68.76 秒**。成功回合对应种子 `2100334504`、`798045335`、`2008795044`、`1072786805`；种子 `238194548` 通过放置阶段判定，但未通过最终任务成功判定。该目录保存汇总、逐轮记录及双视角视频。
+
+[`20000` 训练集评测目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/20000_train20)和本地 `artifacts/score_20000_train20/summary.json` 记录 checkpoint 标签 `20000` 在相同 20 个训练集种子上的任务成功率 **15%（3/20）**、平均得分 **4.275/10**、抓取阶段成功率 **75%（15/20）**、放置阶段成功率 **25%（5/20）**、平均仿真时长 **65.12 秒**。成功回合对应种子 `1058778793`、`2138104349`、`1072786805`；种子 `524596012`、`1858565917` 通过放置阶段判定，但未通过最终任务成功判定。该目录保存汇总和逐轮记录。
+
 ### 非训练集种子：检查泛化能力
 
 不传 `--training-dataset`，用 `--seed` 指定起始种子，连续运行 20 轮。已完成的评测使用 `20260928` 至 `20260947`；初始 TCP 位姿取采集脚本默认值。也可用 `--initial-position X Y Z`、`--initial-quaternion X Y Z W` 覆盖（世界坐标、米、xyzw 顺序）：
@@ -149,9 +186,101 @@ python3.10 -m venv .venv
 ./.venv/bin/python scripts/score_robochallenge_checkpoint.py \
   --host 127.0.0.1 --port 8000 --checkpoint 18000 \
   --seed 20260928 --episodes 20 --max-steps 150 \
-  --output artifacts/score_18000_heldout20_reproduction --save-video
+  --output artifacts/lora_18000_heldout20 --save-video
 ```
 
 [公开评测目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/18000_heldout20)中的 [summary.json](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/blob/main/evaluation/18000_heldout20/summary.json) 记录成功率 **15%**、平均得分 **4.25/10**、抓取成功率 **95%**、放置成功率 **15%** 和平均仿真时长 **62.25 秒**。`selection.json` 保存 20 个种子；`episode_*/` 保存逐轮结果；`lerobot_dataset/videos/` 保存固定视角与腕部视角视频。本地对应 `artifacts/score_18000_heldout20/`。
 
-两组共用参数：`--episodes` 为评测轮数，`--max-steps` 为每轮最多执行的策略步数，`--warmup-frames` 默认 10。`--checkpoint` 仅是写入报告的标签，需自行核对服务端实际加载的权重。`--save-video` 可把评测轨迹保存到结果目录的 `lerobot_dataset/`，并可用视频编码参数调整输出。各自的结果目录中，`selection.json` 记录选中的种子和初始位姿，`episode_*/result.json` 与 `episode_*/steps.json` 记录单轮判定、动作和耗时，`summary.json` 汇总成功率、平均得分、平均仿真时长及抓取/放置阶段成功率。输出目录必须为空。评分采用抓取与放置各 5 分、每次重试扣 0.5 分的 **MotrixSim 本地代理判定**；物理阈值和初始场景并非 RoboChallenge 官方真机评测。评分口径见 [评测说明](docs/robochallenge_checkpoint_scoring_implementation.md)。
+[`20000` 未见种子评测目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/20000_heldout20)和本地 `artifacts/score_20000_heldout20/summary.json` 记录 checkpoint 标签 `20000` 在相同 20 个未见种子上的任务成功率 **20%（4/20）**、平均得分 **4.25/10**、抓取阶段成功率 **80%（16/20）**、放置阶段成功率 **25%（5/20）**、平均仿真时长 **65.91 秒**。放置阶段通过的种子 `20260943` 未通过最终任务成功判定；成功回合对应种子 `20260933`、`20260934`、`20260944`、`20260945`。该目录保存汇总、逐轮记录及双视角视频。
+
+[`24999` 未见种子评测目录](https://huggingface.co/datasets/y-s-h/Motrix_Robochanllenge_Colorblock_v3.1/tree/main/evaluation/24999_heldout20)和本地 `artifacts/score_24999_heldout20/summary.json` 记录 checkpoint 标签 `24999` 在相同 20 个未见种子上的任务成功率 **10%（2/20）**、平均得分 **4.45/10**、抓取阶段成功率 **90%（18/20）**、放置阶段成功率 **25%（5/20）**、平均仿真时长 **68.07 秒**。成功回合对应种子 `20260928`、`20260935`；另有 `20260929`、`20260933`、`20260934` 通过放置阶段判定，但未通过最终任务成功判定。该目录保存汇总、逐轮记录及双视角视频。
+
+### Knowledge Insulation 评测
+
+以下为 Knowledge Insulation LoRA 的 20 轮评测结果。训练集组复用同一组 20 个场景种子；未见种子组使用 `20260928`–`20260947`。得分为 MotrixSim 代理得分，满分 10 分。
+
+**训练集种子 rollout（Knowledge Insulation LoRA）**
+
+| 指标 | checkpoint `15000` | checkpoint `20000` | checkpoint `24999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 0/20（0%） | 3/20（15%） | 3/20（15%） |
+| 抓取阶段成功 | 5/20（25%） | 16/20（80%） | 12/20（60%） |
+| 放置阶段成功 | 0/20（0%） | 3/20（15%） | 3/20（15%） |
+| 平均代理得分 | 1.0/10 | 4.675/10 | 3.625/10 |
+| 总分 | 20/200 | 93.5/200 | 72.5/200 |
+| 平均仿真时长 | 75.07 秒 | 67.62 秒 | 67.68 秒 |
+
+**未见种子 rollout（Knowledge Insulation LoRA）**
+
+| 指标 | checkpoint `15000` | checkpoint `20000` | checkpoint `24999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 2/20（10%） | 5/20（25%） | 5/20（25%） |
+| 抓取阶段成功 | 8/20（40%） | 11/20（55%） | 9/20（45%） |
+| 放置阶段成功 | 2/20（10%） | 5/20（25%） | 5/20（25%） |
+| 平均代理得分 | 2.4/10 | 3.825/10 | 3.45/10 |
+| 总分 | 48/200 | 76.5/200 | 69/200 |
+| 平均仿真时长 | 72.30 秒 | 64.76 秒 | 63.60 秒 |
+
+结果目录：训练集 [checkpoint `15000`](artifacts/lora_ki_15000_train20/)、[checkpoint `20000`](artifacts/lora_ki_20000_train20/)、[checkpoint `24999`](artifacts/lora_ki_24999_train20/)；未见种子 [checkpoint `15000`](artifacts/lora_ki_15000_heldout20/)、[checkpoint `20000`](artifacts/lora_ki_20000_heldout20/)、[checkpoint `24999`](artifacts/lora_ki_24999_heldout20/)。每个目录包含汇总和逐轮记录；视频保存在 `lerobot_dataset/`。
+
+评测得分按抓取、放置各 5 分及每次重试扣 0.5 分计算，采用 MotrixSim 本地代理判定；结果目录中的 checkpoint 身份标记为未验证。评分细节见[评测说明](docs/robochallenge_checkpoint_scoring_implementation.md)。
+
+### Full 模型评测
+
+以下为 Full 模型的 20 轮评测结果。训练集组复用同一组 20 个场景种子；未见种子组使用 `20260928`–`20260947`。得分为 MotrixSim 代理得分，满分 10 分。
+
+**训练集种子 rollout（Full）**
+
+| 指标 | checkpoint `20000` | checkpoint `25000` | checkpoint `29999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 13/20（65%） | 11/20（55%） | 9/20（45%） |
+| 抓取阶段成功 | 20/20（100%） | 20/20（100%） | 20/20（100%） |
+| 放置阶段成功 | 13/20（65%） | 11/20（55%） | 9/20（45%） |
+| 平均代理得分 | 7.975/10 | 7.425/10 | 6.975/10 |
+| 总分 | 159.5/200 | 148.5/200 | 139.5/200 |
+| 平均仿真时长 | 48.00 秒 | 52.16 秒 | 56.36 秒 |
+
+**未见种子 rollout（Full）**
+
+| 指标 | checkpoint `20000` | checkpoint `25000` | checkpoint `29999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 6/20（30%） | 11/20（55%） | 9/20（45%） |
+| 抓取阶段成功 | 20/20（100%） | 20/20（100%） | 20/20（100%） |
+| 放置阶段成功 | 6/20（30%） | 11/20（55%） | 11/20（55%） |
+| 平均代理得分 | 6.45/10 | 7.45/10 | 7.4/10 |
+| 总分 | 129/200 | 149/200 | 148/200 |
+| 平均仿真时长 | 62.30 秒 | 47.26 秒 | 50.14 秒 |
+
+结果目录：训练集 [checkpoint `20000`](artifacts/full_20000_train20/)、[checkpoint `25000`](artifacts/full_25000_train20/)、[checkpoint `29999`](artifacts/full_29999_train20/)；未见种子 [checkpoint `20000`](artifacts/full_20000_heldout20/)、[checkpoint `25000`](artifacts/full_25000_heldout20/)、[checkpoint `29999`](artifacts/full_29999_heldout20/)。每个目录包含汇总和逐轮记录；视频保存在 `lerobot_dataset/`。
+
+评测得分按抓取、放置各 5 分及每次重试扣 0.5 分计算，采用 MotrixSim 本地代理判定；结果目录中的 checkpoint 身份标记为未验证。评分细节见[评测说明](docs/robochallenge_checkpoint_scoring_implementation.md)。
+
+### Full Knowledge Insulation 评测
+
+以下为 Full Knowledge Insulation 模型的 20 轮评测结果。训练集组复用同一组 20 个场景种子；未见种子组使用 `20260928`–`20260947`。得分为 MotrixSim 代理得分，满分 10 分。
+
+**训练集种子 rollout（Full Knowledge Insulation）**
+
+| 指标 | checkpoint `20000` | checkpoint `25000` | checkpoint `29999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 7/20（35%） | 4/20（20%） | 8/20（40%） |
+| 抓取阶段成功 | 14/20（70%） | 12/20（60%） | 15/20（75%） |
+| 放置阶段成功 | 7/20（35%） | 4/20（20%） | 8/20（40%） |
+| 平均代理得分 | 5.225/10 | 3.975/10 | 5.7/10 |
+| 总分 | 104.5/200 | 79.5/200 | 114/200 |
+| 平均仿真时长 | 59.01 秒 | 65.23 秒 | 59.92 秒 |
+
+**未见种子 rollout（Full Knowledge Insulation）**
+
+| 指标 | checkpoint `20000` | checkpoint `25000` | checkpoint `29999` |
+| --- | ---: | ---: | ---: |
+| 任务成功 | 7/20（35%） | 7/20（35%） | 9/20（45%） |
+| 抓取阶段成功 | 17/20（85%） | 15/20（75%） | 16/20（80%） |
+| 放置阶段成功 | 7/20（35%） | 7/20（35%） | 9/20（45%） |
+| 平均代理得分 | 5.875/10 | 5.3/10 | 6.1/10 |
+| 总分 | 117.5/200 | 106/200 | 122/200 |
+| 平均仿真时长 | 62.06 秒 | 63.56 秒 | 59.79 秒 |
+
+结果目录：训练集 [checkpoint `20000`](artifacts/full_ki_20000_train20/)、[checkpoint `25000`](artifacts/full_ki_25000_train20/)、[checkpoint `29999`](artifacts/full_ki_29999_train20/)；未见种子 [checkpoint `20000`](artifacts/full_ki_20000_heldout20/)、[checkpoint `25000`](artifacts/full_ki_25000_heldout20/)、[checkpoint `29999`](artifacts/full_ki_29999_heldout20/)。每个目录包含汇总和逐轮记录；视频保存在 `lerobot_dataset/`。
+
+评测得分按抓取、放置各 5 分及每次重试扣 0.5 分计算，采用 MotrixSim 本地代理判定；结果目录中的 checkpoint 身份标记为未验证。评分细节见[评测说明](docs/robochallenge_checkpoint_scoring_implementation.md)。
